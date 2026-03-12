@@ -1,0 +1,132 @@
+.page {
+  display: flex;
+  gap: 48px;
+  padding: var(--space-6);
+  min-height: 100%;
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.feedWrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+.feedTitle {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-6);
+}
+
+.feedCard {
+  background: var(--color-bg);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-6);
+}
+
+.welcomeSection {
+  margin-bottom: var(--space-8);
+}
+
+.welcomeText {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.statsRow {
+  display: flex;
+  gap: var(--space-6);
+  flex-wrap: wrap;
+}
+
+.statItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  font-size: var(--font-size-base);
+}
+
+.statItemXp {
+  color: var(--color-xp);
+}
+
+.statItemDue {
+  color: var(--color-primary);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-4);
+}
+
+.courseGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--space-4);
+}
+
+.courseCard {
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.courseCard:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.courseCardImage {
+  width: 100%;
+  aspect-ratio: 16/10;
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.courseCardTitle {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.courseCardMeta {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.stickyWrapper {
+  width: 368px;
+  flex-shrink: 0;
+  position: sticky;
+  top: var(--space-6);
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.errorBanner {
+  background: #FFEBEE;
+  color: var(--color-error);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+}

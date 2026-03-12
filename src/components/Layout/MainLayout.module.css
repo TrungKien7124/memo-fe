@@ -1,0 +1,17 @@
+.main {
+  min-height: 100vh;
+  padding-top: 50px;
+}
+
+.content {
+  max-width: 1056px;
+  margin: 0 auto;
+  padding: var(--space-6);
+}
+
+@media (min-width: 1024px) {
+  .main {
+    padding-top: 0;
+    padding-left: 256px;
+  }
+}

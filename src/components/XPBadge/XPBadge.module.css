@@ -1,0 +1,28 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  background: linear-gradient(135deg, #FFC800, #FF9600);
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  font-size: var(--font-size-sm);
+  color: white;
+}
+
+.animate {
+  animation: xpPop 0.4s ease-out;
+}
+
+.icon {
+  font-size: 16px;
+}
+
+.value {
+  font-size: var(--font-size-sm);
+}
+
+.label {
+  font-size: var(--font-size-xs);
+  opacity: 0.9;
+}

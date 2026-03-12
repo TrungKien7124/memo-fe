@@ -1,47 +1,28 @@
-# --- Python & Bytecode ---
-__pycache__/
-*.py[cod]
-*$py.class
-
-# --- Django ---
+# Logs
+logs
 *.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Nếu bạn dùng folder 'media' để chứa file user upload (hình ảnh, v.v.)
-# Chúng ta giữ thư mục media nhưng bỏ qua nội dung bên trong
-media/
-!media/.gitkeep
+node_modules
+dist
+dist-ssr
+*.local
 
-# Nếu bạn chạy lệnh collectstatic, file sẽ ra đây (thường không commit file đã collect)
-staticfiles/
-
-# --- Virtual Environment (Môi trường ảo) ---
-# Tên thư mục env thường dùng
-venv/
-env/
-.venv/
-.env/
-
-# --- Environment Variables (QUAN TRỌNG: Chứa key bảo mật) ---
-.env
-.env.local
-.env.*
-
-# --- IDE & Editor (Cấu hình riêng của trình soạn thảo) ---
-# VS Code
-.vscode/
-# PyCharm
-.idea/
-
-# --- Operating System ---
-# macOS
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-# Windows
-Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# --- Testing & Coverage ---
-.coverage
-htmlcov/
-.pytest_cache/
+# Environment
+.env
+!.env.example

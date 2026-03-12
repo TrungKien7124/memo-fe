@@ -1,0 +1,88 @@
+import { useState } from 'react'
+import { useDispatch } from 'react-redux'
+import { useNavigate, Link } from 'react-router-dom'
+import { Form, Input, Button, message } from 'antd'
+import { MailOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'
+import { loginSuccess, setLoading, setError, setIdle } from './authSlice'
+import { registerAPI } from './authService'
+import styles from './RegisterPage.module.css'
+
+export function RegisterPage() {
+  const [loading, setLocalLoading] = useState(false)
+  const dispatch = useDispatch()
+  const navigate = useNavigate()
+
+  async function handleFinish(values) {
+    setLocalLoading(true)
+    dispatch(setLoading())
+    try {
+      const { data } = await registerAPI({
+        username: values.username,
+        email: values.email,
+        password: values.password,
+      })
+      dispatch(loginSuccess({
+        user: data.data?.user || data.user,
+        access: data.data?.access || data.access,
+        refresh: data.data?.refresh || data.refresh,
+      }))
+      message.success('Welcome to MEMO!')
+      navigate('/dashboard')
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Registration failed'
+      dispatch(setError(msg))
+      message.error(msg)
+    } finally {
+      setLocalLoading(false)
+      dispatch(setIdle())
+    }
+  }
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.card}>
+        <div className={styles.header}>
+          <span className={styles.logo}>📘</span>
+          <h1 className={styles.title}>Join MEMO</h1>
+          <p className={styles.subtitle}>Start your English learning journey</p>
+        </div>
+
+        <Form layout="vertical" onFinish={handleFinish} size="large" requiredMark={false}>
+          <Form.Item name="username" rules={[{ required: true, message: 'Username is required' }]}>
+            <Input prefix={<UserOutlined />} placeholder="Username" />
+          </Form.Item>
+
+          <Form.Item name="email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Invalid email' }]}>
+            <Input prefix={<MailOutlined />} placeholder="Email" />
+          </Form.Item>
+
+          <Form.Item name="password" rules={[{ required: true, message: 'Password is required' }, { min: 8, message: 'At least 8 characters' }]}>
+            <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+          </Form.Item>
+
+          <Form.Item name="confirmPassword" dependencies={['password']} rules={[
+            { required: true, message: 'Please confirm password' },
+            ({ getFieldValue }) => ({
+              validator(_, value) {
+                if (!value || getFieldValue('password') === value) return Promise.resolve()
+                return Promise.reject(new Error('Passwords do not match'))
+              },
+            }),
+          ]}>
+            <Input.Password prefix={<LockOutlined />} placeholder="Confirm Password" />
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={loading} block className={styles.submitBtn}>
+              Create Account
+            </Button>
+          </Form.Item>
+        </Form>
+
+        <p className={styles.footer}>
+          Already have an account? <Link to="/login" className={styles.link}>Log in</Link>
+        </p>
+      </div>
+    </div>
+  )
+}

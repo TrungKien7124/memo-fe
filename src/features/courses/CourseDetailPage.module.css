@@ -1,0 +1,103 @@
+.page {
+  padding: var(--space-6);
+  animation: fadeInUp 0.4s ease-out;
+}
+
+.header {
+  margin-bottom: var(--space-8);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: 800;
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.description {
+  font-size: var(--font-size-base);
+  color: var(--color-text-secondary);
+}
+
+.moduleSection {
+  margin-bottom: var(--space-10);
+}
+
+.moduleBanner {
+  background: #2563eb;
+  color: white;
+  padding: var(--space-4) var(--space-6);
+  border-radius: var(--radius-lg);
+  font-weight: 700;
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-6);
+}
+
+.lessonsPath {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  position: relative;
+}
+
+.lessonRow {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.lessonRowAlt {
+  justify-content: flex-end;
+}
+
+.lessonButton {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-border);
+  border-bottom-width: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.2s ease;
+  background: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.lessonButton:hover {
+  border-color: var(--color-primary);
+}
+
+.lessonButton:active {
+  border-bottom-width: 2px;
+  transform: translateY(6px);
+}
+
+.lessonButtonCompleted {
+  background: var(--color-success);
+  border-color: var(--color-success-hover);
+  color: white;
+}
+
+.lessonButtonCurrent {
+  background: var(--color-primary);
+  border-color: var(--color-primary-hover);
+  color: white;
+}
+
+.lessonButtonLocked {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.connector {
+  width: 2px;
+  background: var(--color-border);
+  min-height: 24px;
+  margin-left: 27px;
+}
+
+.connectorAlt {
+  margin-left: auto;
+  margin-right: 27px;
+}
