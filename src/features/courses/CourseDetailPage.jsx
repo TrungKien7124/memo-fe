@@ -6,22 +6,44 @@ import clsx from 'clsx'
 import { getCourseDetailAPI, getModulesAPI, getLessonsAPI } from './courseService'
 import styles from './CourseDetailPage.module.css'
 
-const MOCK_COURSE = {
-  id: 1,
-  title: 'English Basics',
-  description: 'Learn the fundamentals of English: alphabet, numbers, and simple phrases.',
+function normalizeListResponse(payload) {
+  if (Array.isArray(payload))
+    return payload
+  if (Array.isArray(payload?.data))
+    return payload.data
+  if (Array.isArray(payload?.results))
+    return payload.results
+  if (Array.isArray(payload?.data?.results))
+    return payload.data.results
+  return []
 }
 
-const MOCK_MODULES = [
-  { id: 1, title: 'Unit 1: Greetings', order: 1 },
-  { id: 2, title: 'Unit 2: Numbers', order: 2 },
-]
+function normalizeDetailResponse(payload) {
+  if (payload?.data && !Array.isArray(payload.data))
+    return payload.data
+  return payload
+}
 
-const MOCK_LESSONS = [
-  { id: 1, title: 'Hello', status: 'completed', order: 1 },
-  { id: 2, title: 'Goodbye', status: 'current', order: 2 },
-  { id: 3, title: 'Please & Thanks', status: 'locked', order: 3 },
-]
+function withFallbackLessonStatus(lessons) {
+  let hasCurrent = false
+
+  return lessons.map((lesson, index) => {
+    if (lesson.status === 'completed')
+      return lesson
+    if (lesson.status === 'current') {
+      hasCurrent = true
+      return lesson
+    }
+    if (lesson.status === 'locked')
+      return lesson
+
+    if (!hasCurrent) {
+      hasCurrent = true
+      return { ...lesson, status: 'current' }
+    }
+    return { ...lesson, status: index === 0 ? 'current' : 'locked' }
+  })
+}
 
 function LessonIcon({ status }) {
   if (status === 'completed') return <CheckOutlined />
@@ -35,7 +57,6 @@ export function CourseDetailPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [course, setCourse] = useState(null)
-  const [modules, setModules] = useState([])
   const [modulesWithLessons, setModulesWithLessons] = useState([])
 
   useEffect(() => {
@@ -43,39 +64,33 @@ export function CourseDetailPage() {
       if (!id) return
       setLoading(true)
       try {
-        const [courseRes, modulesRes] = await Promise.allSettled([
+        const [courseRes, modulesRes] = await Promise.all([
           getCourseDetailAPI(id),
           getModulesAPI(id),
         ])
-
-        const courseData = courseRes.status === 'fulfilled'
-          ? (courseRes.value?.data ?? courseRes.value)
-          : MOCK_COURSE
+        const courseData = normalizeDetailResponse(courseRes)
         setCourse(courseData)
 
-        const modList = modulesRes.status === 'fulfilled'
-          ? (modulesRes.value?.data ?? modulesRes.value?.results ?? modulesRes.value)
-          : MOCK_MODULES
-        const modArray = Array.isArray(modList) ? modList : MOCK_MODULES
+        const modArray = normalizeListResponse(modulesRes)
 
         const withLessons = await Promise.all(
-          modArray.map(async (mod, idx) => {
+          modArray.map(async (mod) => {
             try {
               const lessonsRes = await getLessonsAPI(mod.id)
-              const lessons = lessonsRes?.data ?? lessonsRes?.results ?? lessonsRes ?? MOCK_LESSONS
+              const lessons = normalizeListResponse(lessonsRes)
               return {
                 ...mod,
-                lessons: Array.isArray(lessons) ? lessons : MOCK_LESSONS.map((l, i) => ({ ...l, id: `${mod.id}-${i}` })),
+                lessons: withFallbackLessonStatus(lessons),
               }
             } catch {
-              return { ...mod, lessons: MOCK_LESSONS.map((l, i) => ({ ...l, id: `${mod.id}-${i}` })) }
+              return { ...mod, lessons: [] }
             }
           })
         )
         setModulesWithLessons(withLessons)
-      } catch (err) {
-        setCourse(MOCK_COURSE)
-        setModulesWithLessons(MOCK_MODULES.map((m) => ({ ...m, lessons: MOCK_LESSONS })))
+      } catch {
+        setCourse(null)
+        setModulesWithLessons([])
       } finally {
         setLoading(false)
       }
@@ -96,7 +111,7 @@ export function CourseDetailPage() {
   }
 
   function handleLessonClick(lesson, mod) {
-    if (lesson.status === 'locked') return
+    if (lesson.status === 'locked' || mod?.is_unlocked === false) return
     navigate(`/courses/${id}/lessons/${lesson.id}`)
   }
 
