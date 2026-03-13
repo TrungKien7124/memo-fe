@@ -20,11 +20,16 @@ export function RegisterPage() {
         username: values.username,
         email: values.email,
         password: values.password,
+        confirm_password: values.confirm_password,
       })
+      const user = data.data?.user
+      const access = data.data?.tokens?.access
+      const refresh = data.data?.tokens?.refresh
+      if (!user || !access || !refresh) throw new Error('Invalid register response format')
       dispatch(loginSuccess({
-        user: data.data?.user || data.user,
-        access: data.data?.access || data.access,
-        refresh: data.data?.refresh || data.refresh,
+        user,
+        access,
+        refresh,
       }))
       message.success('Welcome to MEMO!')
       navigate('/dashboard')
@@ -60,7 +65,7 @@ export function RegisterPage() {
             <Input.Password prefix={<LockOutlined />} placeholder="Password" />
           </Form.Item>
 
-          <Form.Item name="confirmPassword" dependencies={['password']} rules={[
+          <Form.Item name="confirm_password" dependencies={['password']} rules={[
             { required: true, message: 'Please confirm password' },
             ({ getFieldValue }) => ({
               validator(_, value) {

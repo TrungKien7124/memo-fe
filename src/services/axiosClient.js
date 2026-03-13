@@ -45,11 +45,14 @@ axiosClient.interceptors.response.use(
         if (!refresh) throw new Error('No refresh token')
 
         const { data } = await axios.post(`${API_URL}/api/auth/refresh/`, { refresh })
-        localStorage.setItem('access_token', data.access)
-        if (data.refresh) localStorage.setItem('refresh_token', data.refresh)
+        const accessToken = data.data?.access
+        const refreshToken = data.data?.refresh
+        if (!accessToken) throw new Error('Invalid refresh response format')
+        localStorage.setItem('access_token', accessToken)
+        if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
 
-        processQueue(null, data.access)
-        originalRequest.headers.Authorization = `Bearer ${data.access}`
+        processQueue(null, accessToken)
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`
         return axiosClient(originalRequest)
       } catch (err) {
         processQueue(err, null)

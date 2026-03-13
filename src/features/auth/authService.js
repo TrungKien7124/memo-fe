@@ -13,5 +13,5 @@ export function refreshTokenAPI(refresh) {
 }
 
 export function getProfileAPI() {
-  return axiosClient.get('/api/auth/profile/')
+  return axiosClient.get('/api/iam/profiles/')
 }

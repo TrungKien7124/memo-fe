@@ -1,7 +1,7 @@
 import axiosClient from '../../services/axiosClient'
 
 export async function createReviewSessionAPI() {
-  const { data } = await axiosClient.post('/api/srs/review-sessions/')
+  const { data } = await axiosClient.post('/api/rse/review-sessions/')
   return data
 }
 
@@ -14,16 +14,16 @@ export async function getDueCardsAPI() {
 }
 
 export async function submitCardReviewAPI(data) {
-  const { data: result } = await axiosClient.post('/api/srs/card-review-logs/', data)
+  const { data: result } = await axiosClient.post('/api/rse/card-review-logs/', data)
   return result
 }
 
 export async function endReviewSessionAPI(id, data) {
-  const { data: result } = await axiosClient.patch(`/api/srs/review-sessions/${id}/`, data)
+  const { data: result } = await axiosClient.patch(`/api/rse/review-sessions/${id}/`, data)
   return result
 }
 
 export async function getReviewHistoryAPI() {
-  const { data } = await axiosClient.get('/api/srs/review-sessions/')
+  const { data } = await axiosClient.get('/api/rse/review-sessions/')
   return data
 }

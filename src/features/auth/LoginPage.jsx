@@ -17,10 +17,14 @@ export function LoginPage() {
     dispatch(setLoading())
     try {
       const { data } = await loginAPI(values)
+      const user = data.data?.user
+      const access = data.data?.tokens?.access
+      const refresh = data.data?.tokens?.refresh
+      if (!user || !access || !refresh) throw new Error('Invalid login response format')
       dispatch(loginSuccess({
-        user: data.data?.user || data.user,
-        access: data.data?.access || data.access,
-        refresh: data.data?.refresh || data.refresh,
+        user,
+        access,
+        refresh,
       }))
       message.success('Welcome back!')
       navigate('/dashboard')
