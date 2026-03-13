@@ -48,8 +48,8 @@ export function LoginPage() {
         </div>
 
         <Form layout="vertical" onFinish={handleFinish} size="large" requiredMark={false}>
-          <Form.Item name="email" rules={[{ required: true, message: 'Email is required' }, { type: 'email', message: 'Invalid email' }]}>
-            <Input prefix={<MailOutlined />} placeholder="Email" />
+          <Form.Item name="email" rules={[{ required: true, message: 'Email hoặc username là bắt buộc' }]}>
+            <Input prefix={<MailOutlined />} placeholder="Email hoặc username" />
           </Form.Item>
 
           <Form.Item name="password" rules={[{ required: true, message: 'Password is required' }]}>
