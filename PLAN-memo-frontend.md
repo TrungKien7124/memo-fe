@@ -506,7 +506,7 @@ Frontend phải xử lý theo thứ tự:
 
 /courses                → CoursesPage (browse courses)
 /courses/:id            → CourseDetailPage (modules + lessons)
-/courses/:id/lessons/:lessonId → LessonPage (video player)
+/courses/:id/lessons/:lessonId → LessonPage (typed lesson: video/text/quiz)
 
 /flashcards             → FoldersPage (folder list)
 /flashcards/:folderId   → FlashcardListPage (cards in folder)
@@ -537,13 +537,13 @@ Frontend phải xử lý theo thứ tự:
 | 1 | **Login / Register** | Form đăng nhập/đăng ký, JWT auth | P0 |
 | 2 | **Dashboard** | Daily goal, streak, progress tổng quan, XP | P0 |
 | 3 | **Courses** | Browse + enroll khóa học | P0 |
-| 4 | **Lesson** | Video player + progress tracking | P0 |
+| 4 | **Lesson** | Typed lesson renderer (video/text/quiz) + progress tracking | P0 |
 | 5 | **Flashcard Management** | CRUD folders + cards | P0 |
 | 6 | **Review Session** | Full-screen SRS ôn tập (Duolingo-style) | P0 |
 | 7 | **Speaking Session** | Full-screen AI conversation | P1 |
 | 8 | **Leaderboard** | Rankings theo XP / thời gian học | P1 |
 | 9 | **Profile / Stats** | XP, streak, learning history | P1 |
-| 10 | **Admin** | Layered CMS management: courses → modules → lessons (admin only) | P2 |
+| 10 | **Admin** | Layered CMS management: courses → modules → lessons with delete + typed lessons + final quiz (admin only) | P2 |
 
 ### 4.2 Shared Components
 
@@ -663,7 +663,7 @@ Frontend phải xử lý theo thứ tự:
 ### Phase 4: Gamification & Polish (P1-P2)
 
 - [ ] **T11: Leaderboard + Profile** → Rankings page, profile stats (XP, streak, history chart) → Verify: Leaderboard sorted đúng
-- [ ] **T12: Admin pages** → Layered admin workflow: Course list/create/edit → Module list/create/edit by course → Lesson list/create/edit by module (admin only) → Verify: Admin can complete the full drill-down flow successfully
+- [ ] **T12: Admin pages** → Layered admin workflow with delete actions + typed lesson forms (video/text/quiz) + final module quiz flag (`is_final`) (admin only) → Verify: Admin can complete create/edit/delete and final quiz setup end-to-end
 - [ ] **T13: Responsive + Polish** → Test responsive tất cả pages, animations, loading states, error handling → Verify: Responsive test 375px / 768px / 1024px / 1440px
 - [ ] **T14: Deploy Vercel** → `vercel.json` rewrites config, env variables, build test → Verify: `npm run build` thành công, deploy Vercel preview OK
 
