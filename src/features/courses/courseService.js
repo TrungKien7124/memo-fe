@@ -36,3 +36,11 @@ export async function markLessonProgressAPI(lessonId, payload) {
   })
   return data
 }
+
+export async function submitQuizAnswerAPI(lessonId, payload) {
+  const { data } = await axiosClient.post('/api/lms/lesson-progress/', {
+    lesson: lessonId,
+    ...payload,
+  })
+  return data
+}
