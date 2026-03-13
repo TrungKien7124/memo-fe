@@ -62,7 +62,7 @@ export function AdminCoursesPage() {
   async function handleCreateCourse(values) {
     try {
       await createAdminCourseAPI(values)
-      message.success('Tao khoa hoc thanh cong')
+      message.success('Course created successfully')
       courseForm.resetFields()
       loadCourses()
     } catch (error) {
@@ -94,7 +94,7 @@ export function AdminCoursesPage() {
 
     try {
       await updateAdminCourseAPI(editingCourse.id, values)
-      message.success('Cap nhat khoa hoc thanh cong')
+      message.success('Course updated successfully')
       handleCloseEditCourseModal()
       loadCourses()
     } catch (error) {
@@ -107,24 +107,24 @@ export function AdminCoursesPage() {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <Title level={2} className={styles.title}>Quan ly khoa hoc</Title>
+        <Title level={2} className={styles.title}>Course Management</Title>
         <Text className={styles.subtitle}>
-          Tao khoa hoc, sau do di sau vao tung khoa hoc de quan ly module va bai giang.
+          Create courses, then drill into each course to manage modules and lessons.
         </Text>
       </div>
 
-      <Card title="Tao khoa hoc moi" className={styles.formCard}>
+      <Card title="Create New Course" className={styles.formCard}>
         <Form form={courseForm} layout="vertical" onFinish={handleCreateCourse} requiredMark={false}>
-          <Form.Item name="title" label="Tieu de" rules={[{ required: true, message: 'Vui long nhap tieu de khoa hoc' }]}>
+          <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Please enter the course title' }]}>
             <Input placeholder="English Basics" />
           </Form.Item>
-          <Form.Item name="description" label="Mo ta">
-            <Input.TextArea rows={3} placeholder="Mo ta ngan ve khoa hoc" />
+          <Form.Item name="description" label="Description">
+            <Input.TextArea rows={3} placeholder="Short description of this course" />
           </Form.Item>
           <Form.Item name="thumbnail_url" label="Thumbnail URL">
             <Input placeholder="https://..." />
           </Form.Item>
-          <Form.Item name="status" label="Trang thai" initialValue="draft">
+          <Form.Item name="status" label="Status" initialValue="draft">
             <Select
               options={[
                 { value: 'draft', label: 'Draft' },
@@ -134,37 +134,37 @@ export function AdminCoursesPage() {
             />
           </Form.Item>
           <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
-            Tao khoa hoc
+            Create Course
           </Button>
         </Form>
       </Card>
 
-      <Card title="Danh sach khoa hoc" className={styles.tableCard}>
+      <Card title="Course List" className={styles.tableCard}>
         <Table
           rowKey="id"
           loading={loading}
           dataSource={courses}
           pagination={{ pageSize: 8 }}
           columns={[
-            { title: 'Tieu de', dataIndex: 'title', key: 'title' },
-            { title: 'Mo ta', dataIndex: 'description', key: 'description', ellipsis: true },
+            { title: 'Title', dataIndex: 'title', key: 'title' },
+            { title: 'Description', dataIndex: 'description', key: 'description', ellipsis: true },
             {
-              title: 'Trang thai',
+              title: 'Status',
               dataIndex: 'status',
               key: 'status',
               render: (status) => <Tag color={statusColor(status)}>{status}</Tag>,
             },
             {
-              title: 'Hanh dong',
+              title: 'Actions',
               key: 'actions',
               width: 320,
               render: (_, record) => (
                 <Space>
                   <Button onClick={() => navigate(`/admin/courses/${record.id}/modules`)}>
-                    Quan ly module
+                    Manage Modules
                   </Button>
                   <Button icon={<EditOutlined />} onClick={() => handleOpenEditCourseModal(record)}>
-                    Chinh sua
+                    Edit
                   </Button>
                 </Space>
               ),
@@ -174,24 +174,24 @@ export function AdminCoursesPage() {
       </Card>
 
       <Modal
-        title="Chinh sua khoa hoc"
+        title="Edit Course"
         open={isEditModalOpen}
         onCancel={handleCloseEditCourseModal}
         onOk={() => editCourseForm.submit()}
-        okText="Luu"
-        cancelText="Huy"
+        okText="Save"
+        cancelText="Cancel"
       >
         <Form form={editCourseForm} layout="vertical" onFinish={handleUpdateCourse} requiredMark={false}>
-          <Form.Item name="title" label="Tieu de" rules={[{ required: true, message: 'Vui long nhap tieu de khoa hoc' }]}>
+          <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Please enter the course title' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="description" label="Mo ta">
+          <Form.Item name="description" label="Description">
             <Input.TextArea rows={3} />
           </Form.Item>
           <Form.Item name="thumbnail_url" label="Thumbnail URL">
             <Input />
           </Form.Item>
-          <Form.Item name="status" label="Trang thai" rules={[{ required: true, message: 'Vui long chon trang thai' }]}>
+          <Form.Item name="status" label="Status" rules={[{ required: true, message: 'Please select a status' }]}>
             <Select
               options={[
                 { value: 'draft', label: 'Draft' },

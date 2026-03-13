@@ -4,7 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import styles from './AdminSidebar.module.css'
 
 const ADMIN_NAV_ITEMS = [
-  { label: 'Khoa hoc', path: '/admin/courses', icon: BookOutlined },
+  { label: 'Courses', path: '/admin/courses', icon: BookOutlined },
 ]
 
 export function AdminSidebar({ className, isDrawer = false, onNavigate }) {
@@ -24,7 +24,7 @@ export function AdminSidebar({ className, isDrawer = false, onNavigate }) {
 
       <div className={styles.sectionLabel}>
         <SettingOutlined />
-        <span>Quan tri noi dung</span>
+        <span>Content Management</span>
       </div>
 
       <nav className={styles.nav}>
@@ -49,7 +49,7 @@ export function AdminSidebar({ className, isDrawer = false, onNavigate }) {
       <div className={styles.footer}>
         <Link to="/dashboard" onClick={handleNavClick} className={styles.backToApp}>
           <HomeOutlined className={styles.navIcon} />
-          <span>Ve man hinh hoc</span>
+          <span>Back to Learning App</span>
         </Link>
       </div>
     </aside>

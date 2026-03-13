@@ -65,7 +65,7 @@ export function AdminCourseModulesPage() {
   async function handleCreateModule(values) {
     try {
       await createAdminModuleAPI({ ...values, course: parsedCourseId || courseId })
-      message.success('Tao module thanh cong')
+      message.success('Module created successfully')
       createForm.resetFields()
       loadData()
     } catch (error) {
@@ -95,7 +95,7 @@ export function AdminCourseModulesPage() {
 
     try {
       await updateAdminModuleAPI(editingModule.id, values)
-      message.success('Cap nhat module thanh cong')
+      message.success('Module updated successfully')
       handleCloseEditModuleModal()
       loadData()
     } catch (error) {
@@ -110,49 +110,49 @@ export function AdminCourseModulesPage() {
       <div className={styles.header}>
         <Space>
           <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/admin/courses')}>
-            Quay lai khoa hoc
+            Back to Courses
           </Button>
         </Space>
-        <Title level={2} className={styles.title}>Quan ly module</Title>
+        <Title level={2} className={styles.title}>Module Management</Title>
         <Text className={styles.subtitle}>
-          Khoa hoc: <strong>{course?.title || `#${courseId}`}</strong>
+          Course: <strong>{course?.title || `#${courseId}`}</strong>
         </Text>
       </div>
 
-      <Card title="Tao module moi" className={styles.formCard}>
+      <Card title="Create New Module" className={styles.formCard}>
         <Form form={createForm} layout="vertical" onFinish={handleCreateModule} requiredMark={false}>
-          <Form.Item name="title" label="Tieu de module" rules={[{ required: true, message: 'Vui long nhap tieu de module' }]}>
+          <Form.Item name="title" label="Module Title" rules={[{ required: true, message: 'Please enter the module title' }]}>
             <Input placeholder="Module 1: Greetings" />
           </Form.Item>
-          <Form.Item name="order_index" label="Thu tu" initialValue={0}>
+          <Form.Item name="order_index" label="Order" initialValue={0}>
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
           <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
-            Tao module
+            Create Module
           </Button>
         </Form>
       </Card>
 
-      <Card title="Danh sach module" className={styles.tableCard}>
+      <Card title="Module List" className={styles.tableCard}>
         <Table
           rowKey="id"
           loading={loading}
           dataSource={modules}
           pagination={{ pageSize: 10 }}
           columns={[
-            { title: 'Tieu de', dataIndex: 'title', key: 'title' },
-            { title: 'Thu tu', dataIndex: 'order_index', key: 'order_index', width: 120 },
+            { title: 'Title', dataIndex: 'title', key: 'title' },
+            { title: 'Order', dataIndex: 'order_index', key: 'order_index', width: 120 },
             {
-              title: 'Hanh dong',
+              title: 'Actions',
               key: 'actions',
               width: 340,
               render: (_, record) => (
                 <Space>
                   <Button onClick={() => navigate(`/admin/modules/${record.id}/lessons`)}>
-                    Quan ly bai giang
+                    Manage Lessons
                   </Button>
                   <Button icon={<EditOutlined />} onClick={() => handleOpenEditModuleModal(record)}>
-                    Chinh sua
+                    Edit
                   </Button>
                 </Space>
               ),
@@ -162,18 +162,18 @@ export function AdminCourseModulesPage() {
       </Card>
 
       <Modal
-        title="Chinh sua module"
+        title="Edit Module"
         open={isEditModalOpen}
         onCancel={handleCloseEditModuleModal}
         onOk={() => editForm.submit()}
-        okText="Luu"
-        cancelText="Huy"
+        okText="Save"
+        cancelText="Cancel"
       >
         <Form form={editForm} layout="vertical" onFinish={handleUpdateModule} requiredMark={false}>
-          <Form.Item name="title" label="Tieu de module" rules={[{ required: true, message: 'Vui long nhap tieu de module' }]}>
+          <Form.Item name="title" label="Module Title" rules={[{ required: true, message: 'Please enter the module title' }]}>
             <Input />
           </Form.Item>
-          <Form.Item name="order_index" label="Thu tu" rules={[{ required: true, message: 'Vui long nhap thu tu' }]}>
+          <Form.Item name="order_index" label="Order" rules={[{ required: true, message: 'Please enter the module order' }]}>
             <InputNumber min={0} style={{ width: '100%' }} />
           </Form.Item>
         </Form>

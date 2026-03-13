@@ -328,7 +328,9 @@ memo-fe/
 │   │   │
 │   │   └── admin/
 │   │       ├── AdminCoursesPage.jsx
-│   │       └── AdminUsersPage.jsx
+│   │       ├── AdminCourseModulesPage.jsx
+│   │       ├── AdminModuleLessonsPage.jsx
+│   │       └── adminService.js
 │   │
 │   ├── hooks/                    # Custom hooks
 │   │   ├── useAuth.js
@@ -518,8 +520,10 @@ Frontend phải xử lý theo thứ tự:
 /leaderboard            → LeaderboardPage
 /profile                → ProfileStatsPage
 
-/admin/courses          → AdminCoursesPage (teacher/admin)
-/admin/users            → AdminUsersPage (admin only)
+/admin                  → redirect → /admin/courses (admin only)
+/admin/courses          → AdminCoursesPage (admin only)
+/admin/courses/:courseId/modules → AdminCourseModulesPage (admin only)
+/admin/modules/:moduleId/lessons → AdminModuleLessonsPage (admin only)
 ```
 
 ---
@@ -539,13 +543,14 @@ Frontend phải xử lý theo thứ tự:
 | 7 | **Speaking Session** | Full-screen AI conversation | P1 |
 | 8 | **Leaderboard** | Rankings theo XP / thời gian học | P1 |
 | 9 | **Profile / Stats** | XP, streak, learning history | P1 |
-| 10 | **Admin** | Quản lý courses (teacher/admin) | P2 |
+| 10 | **Admin** | Layered CMS management: courses → modules → lessons (admin only) | P2 |
 
 ### 4.2 Shared Components
 
 | Component | Chức năng |
 |-----------|-----------|
 | `MainLayout` | Sidebar (nav) + Header (user info, XP, streak) + Content area |
+| `AdminLayout` | Dedicated admin shell (admin sidebar/header) for `/admin/*` routes |
 | `ProtectedRoute` | Redirect về /login nếu chưa auth |
 | `ProgressBar` | Thanh tiến độ animated (dùng khắp nơi) |
 | `XPBadge` | Hiển thị XP với animation pop-up khi cộng |
@@ -658,7 +663,7 @@ Frontend phải xử lý theo thứ tự:
 ### Phase 4: Gamification & Polish (P1-P2)
 
 - [ ] **T11: Leaderboard + Profile** → Rankings page, profile stats (XP, streak, history chart) → Verify: Leaderboard sorted đúng
-- [ ] **T12: Admin pages** → Course management (CRUD) cho teacher/admin → Verify: Teacher tạo/sửa course thành công
+- [ ] **T12: Admin pages** → Layered admin workflow: Course list/create/edit → Module list/create/edit by course → Lesson list/create/edit by module (admin only) → Verify: Admin can complete the full drill-down flow successfully
 - [ ] **T13: Responsive + Polish** → Test responsive tất cả pages, animations, loading states, error handling → Verify: Responsive test 375px / 768px / 1024px / 1440px
 - [ ] **T14: Deploy Vercel** → `vercel.json` rewrites config, env variables, build test → Verify: `npm run build` thành công, deploy Vercel preview OK
 
