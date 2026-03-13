@@ -48,7 +48,7 @@ export function Header() {
         width={256}
         styles={{ body: { padding: 0 } }}
       >
-        <Sidebar />
+        <Sidebar isDrawer />
       </Drawer>
     </>
   )

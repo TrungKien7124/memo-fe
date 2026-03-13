@@ -3,6 +3,10 @@
   padding-top: 50px;
 }
 
+.desktopSidebar {
+  display: none;
+}
+
 .content {
   max-width: 1056px;
   margin: 0 auto;
@@ -10,6 +14,10 @@
 }
 
 @media (min-width: 1024px) {
+  .desktopSidebar {
+    display: flex;
+  }
+
   .main {
     padding-top: 0;
     padding-left: 256px;

@@ -7,7 +7,7 @@ export function MainLayout() {
   return (
     <>
       <Header />
-      <Sidebar />
+      <Sidebar className={styles.desktopSidebar} />
       <main className={styles.main}>
         <div className={styles.content}>
           <Outlet />

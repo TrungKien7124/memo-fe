@@ -12,6 +12,13 @@
   z-index: 50;
 }
 
+.drawerSidebar {
+  position: static;
+  height: 100%;
+  border-right: none;
+  z-index: auto;
+}
+
 .logo {
   display: flex;
   align-items: center;
@@ -69,10 +76,4 @@
 
 .navIcon {
   font-size: 20px;
-}
-
-@media (max-width: 1023px) {
-  .sidebar {
-    display: none;
-  }
 }

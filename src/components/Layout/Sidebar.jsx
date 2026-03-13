@@ -21,11 +21,11 @@ const NAV_ITEMS = [
   { label: 'Profile', path: '/profile', icon: UserOutlined },
 ]
 
-export function Sidebar({ className }) {
+export function Sidebar({ className, isDrawer = false }) {
   const location = useLocation()
 
   return (
-    <div className={clsx(styles.sidebar, className)}>
+    <div className={clsx(styles.sidebar, isDrawer && styles.drawerSidebar, className)}>
       <Link to="/dashboard" className={styles.logo}>
         <span className={styles.logoIcon}>📘</span>
         <h1 className={styles.logoText}>MEMO</h1>
