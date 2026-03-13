@@ -24,27 +24,6 @@ function normalizeDetailResponse(payload) {
   return payload
 }
 
-function withFallbackLessonStatus(lessons) {
-  let hasCurrent = false
-
-  return lessons.map((lesson, index) => {
-    if (lesson.status === 'completed')
-      return lesson
-    if (lesson.status === 'current') {
-      hasCurrent = true
-      return lesson
-    }
-    if (lesson.status === 'locked')
-      return lesson
-
-    if (!hasCurrent) {
-      hasCurrent = true
-      return { ...lesson, status: 'current' }
-    }
-    return { ...lesson, status: index === 0 ? 'current' : 'locked' }
-  })
-}
-
 function LessonIcon({ status }) {
   if (status === 'completed') return <CheckOutlined />
   if (status === 'current') return <StarOutlined />
@@ -80,7 +59,7 @@ export function CourseDetailPage() {
               const lessons = normalizeListResponse(lessonsRes)
               return {
                 ...mod,
-                lessons: withFallbackLessonStatus(lessons),
+                lessons,
               }
             } catch {
               return { ...mod, lessons: [] }
@@ -111,7 +90,8 @@ export function CourseDetailPage() {
   }
 
   function handleLessonClick(lesson, mod) {
-    if (lesson.status === 'locked' || mod?.is_unlocked === false) return
+    const isAllowedLesson = lesson.status === 'current' || lesson.status === 'completed'
+    if (!isAllowedLesson || mod?.is_unlocked === false) return
     navigate(`/courses/${id}/lessons/${lesson.id}`)
   }
 
