@@ -1,0 +1,30 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  background: var(--color-bg);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+}
+
+.title {
+  margin-bottom: 4px !important;
+}
+
+.subtitle {
+  color: var(--color-text-secondary);
+}
+
+.formCard {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-card);
+}
+
+.tableCard {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-card);
+}
