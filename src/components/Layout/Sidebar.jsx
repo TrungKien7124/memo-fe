@@ -1,4 +1,5 @@
 import { useLocation, Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import clsx from 'clsx'
 import {
   HomeOutlined,
@@ -8,7 +9,9 @@ import {
   AudioOutlined,
   TrophyOutlined,
   UserOutlined,
+  SafetyCertificateOutlined,
 } from '@ant-design/icons'
+import { API_URL, USER_ROLES } from '../../utils/constants'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -23,6 +26,9 @@ const NAV_ITEMS = [
 
 export function Sidebar({ className, isDrawer = false }) {
   const location = useLocation()
+  const currentUserRole = useSelector((state) => state.auth?.user?.role)
+  const isAdmin = currentUserRole === USER_ROLES.ADMIN
+  const adminPanelUrl = `${API_URL.replace(/\/$/, '')}/admin/`
 
   return (
     <div className={clsx(styles.sidebar, isDrawer && styles.drawerSidebar, className)}>
@@ -47,6 +53,18 @@ export function Sidebar({ className, isDrawer = false }) {
             </Link>
           )
         })}
+
+        {isAdmin && (
+          <a
+            href={adminPanelUrl}
+            className={styles.adminNavItem}
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            <SafetyCertificateOutlined className={styles.navIcon} />
+            <span>Admin Panel</span>
+          </a>
+        )}
       </nav>
     </div>
   )
