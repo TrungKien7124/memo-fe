@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux'
 import { Spin, message } from 'antd'
 import { getProfileStatsAPI } from './gamificationService'
 import { formatXP } from '../../utils/formatXP'
+import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './ProfileStatsPage.module.css'
 
 function getInitials(user) {
@@ -27,7 +28,7 @@ export function ProfileStatsPage() {
       const data = await getProfileStatsAPI()
       setStats(data)
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to load stats'
+      const msg = getApiErrorMessage(err, 'Failed to load stats')
       message.error(msg)
     } finally {
       setLoading(false)

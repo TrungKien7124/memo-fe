@@ -5,12 +5,14 @@ import { Form, Input, Button, message } from 'antd'
 import { MailOutlined, LockOutlined } from '@ant-design/icons'
 import { loginSuccess, setLoading, setError, setIdle } from './authSlice'
 import { loginAPI } from './authService'
+import { applyFormApiError, parseApiError } from '../../utils/apiError'
 import styles from './LoginPage.module.css'
 
 export function LoginPage() {
   const [loading, setLocalLoading] = useState(false)
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const [form] = Form.useForm()
 
   async function handleFinish(values) {
     setLocalLoading(true)
@@ -29,9 +31,10 @@ export function LoginPage() {
       message.success('Welcome back!')
       navigate('/dashboard')
     } catch (err) {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Login failed'
-      dispatch(setError(msg))
-      message.error(msg)
+      const parsedError = parseApiError(err, 'Login failed')
+      applyFormApiError(form, parsedError)
+      dispatch(setError(parsedError.message))
+      message.error(parsedError.message)
     } finally {
       setLocalLoading(false)
       dispatch(setIdle())
@@ -47,7 +50,7 @@ export function LoginPage() {
           <p className={styles.subtitle}>Learn English, your way</p>
         </div>
 
-        <Form layout="vertical" onFinish={handleFinish} size="large" requiredMark={false}>
+        <Form form={form} layout="vertical" onFinish={handleFinish} size="large" requiredMark={false}>
           <Form.Item name="email" rules={[{ required: true, message: 'Email hoặc username là bắt buộc' }]}>
             <Input prefix={<MailOutlined />} placeholder="Email hoặc username" />
           </Form.Item>

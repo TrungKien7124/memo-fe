@@ -5,6 +5,7 @@ import { SyncOutlined } from '@ant-design/icons'
 import { getReviewHistoryAPI } from './reviewService'
 import { formatDate, formatDateTime } from '../../utils/formatDate'
 import { formatXP } from '../../utils/formatXP'
+import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './ReviewHistory.module.css'
 
 export function ReviewHistory() {
@@ -17,7 +18,7 @@ export function ReviewHistory() {
       const data = await getReviewHistoryAPI()
       setSessions(Array.isArray(data) ? data : data?.results || [])
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to load history'
+      const msg = getApiErrorMessage(err, 'Failed to load history')
       message.error(msg)
     } finally {
       setLoading(false)

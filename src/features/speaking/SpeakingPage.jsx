@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Spin, message } from 'antd'
 import { createSpeakingSessionAPI } from './speakingService'
+import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './SpeakingPage.module.css'
 
 const TOPICS = [
@@ -48,7 +49,7 @@ export function SpeakingPage() {
       const sessionId = session?.id ?? session
       navigate(`/speaking/${sessionId}`, { state: { topic: topic.title } })
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to create session'
+      const msg = getApiErrorMessage(err, 'Failed to create session')
       message.error(msg)
     } finally {
       setLoading(false)

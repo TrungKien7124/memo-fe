@@ -9,6 +9,7 @@ import {
   submitCardReviewAPI,
   endReviewSessionAPI,
 } from './reviewService'
+import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './ReviewSessionPage.module.css'
 
 const RATING_EASY = 'easy'
@@ -41,7 +42,7 @@ export function ReviewSessionPage() {
       setFeedback(null)
       setDone(false)
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to start review'
+      const msg = getApiErrorMessage(err, 'Failed to start review')
       message.error(msg)
       navigate(-1)
     } finally {
@@ -69,7 +70,7 @@ export function ReviewSessionPage() {
         rating,
       })
     } catch (err) {
-      message.error(err.response?.data?.detail || 'Failed to submit')
+      message.error(getApiErrorMessage(err, 'Failed to submit'))
     }
 
     const xp = XP_PER_RATING[rating] ?? 10

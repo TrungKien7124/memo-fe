@@ -9,6 +9,7 @@ import {
   deleteFlashcardAPI,
 } from './flashcardService'
 import { FlashcardForm } from './FlashcardForm'
+import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './FlashcardListPage.module.css'
 
 export function FlashcardListPage() {
@@ -32,7 +33,7 @@ export function FlashcardListPage() {
       setFolder(folders.find((f) => String(f.id) === String(folderId)) || { id: folderId, name: 'Folder' })
       setFlashcards(Array.isArray(cardsData) ? cardsData : cardsData?.results || [])
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to load'
+      const msg = getApiErrorMessage(err, 'Failed to load')
       message.error(msg)
     } finally {
       setLoading(false)
@@ -59,7 +60,7 @@ export function FlashcardListPage() {
       message.success('Card deleted')
       loadData()
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Delete failed'
+      const msg = getApiErrorMessage(err, 'Delete failed')
       message.error(msg)
     }
   }

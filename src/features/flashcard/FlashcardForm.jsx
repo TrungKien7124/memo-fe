@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Modal, Form, Input, message } from 'antd'
 import { createFlashcardAPI, updateFlashcardAPI } from './flashcardService'
+import { applyFormApiError, parseApiError } from '../../utils/apiError'
 
 export function FlashcardForm({ open, onClose, folderId, initialValues, onSuccess }) {
   const [form] = Form.useForm()
@@ -27,8 +28,9 @@ export function FlashcardForm({ open, onClose, folderId, initialValues, onSucces
       onClose()
       form.resetFields()
     } catch (err) {
-      const msg = err.response?.data?.detail || err.response?.data?.error || 'Operation failed'
-      message.error(msg)
+      const parsedError = parseApiError(err, 'Operation failed')
+      applyFormApiError(form, parsedError)
+      message.error(parsedError.message)
     }
   }
 

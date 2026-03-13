@@ -5,12 +5,14 @@ import { Form, Input, Button, message } from 'antd'
 import { MailOutlined, LockOutlined, UserOutlined } from '@ant-design/icons'
 import { loginSuccess, setLoading, setError, setIdle } from './authSlice'
 import { registerAPI } from './authService'
+import { applyFormApiError, parseApiError } from '../../utils/apiError'
 import styles from './RegisterPage.module.css'
 
 export function RegisterPage() {
   const [loading, setLocalLoading] = useState(false)
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const [form] = Form.useForm()
 
   async function handleFinish(values) {
     setLocalLoading(true)
@@ -34,9 +36,10 @@ export function RegisterPage() {
       message.success('Welcome to MEMO!')
       navigate('/dashboard')
     } catch (err) {
-      const msg = err.response?.data?.error?.message || err.response?.data?.detail || 'Registration failed'
-      dispatch(setError(msg))
-      message.error(msg)
+      const parsedError = parseApiError(err, 'Registration failed')
+      applyFormApiError(form, parsedError)
+      dispatch(setError(parsedError.message))
+      message.error(parsedError.message)
     } finally {
       setLocalLoading(false)
       dispatch(setIdle())
@@ -52,7 +55,7 @@ export function RegisterPage() {
           <p className={styles.subtitle}>Start your English learning journey</p>
         </div>
 
-        <Form layout="vertical" onFinish={handleFinish} size="large" requiredMark={false}>
+        <Form form={form} layout="vertical" onFinish={handleFinish} size="large" requiredMark={false}>
           <Form.Item name="username" rules={[{ required: true, message: 'Username is required' }]}>
             <Input prefix={<UserOutlined />} placeholder="Username" />
           </Form.Item>

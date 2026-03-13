@@ -4,6 +4,7 @@ import { Spin, message } from 'antd'
 import clsx from 'clsx'
 import { getLeaderboardAPI, getProfileStatsAPI } from './gamificationService'
 import { formatXP } from '../../utils/formatXP'
+import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './LeaderboardPage.module.css'
 
 function getInitials(name) {
@@ -32,7 +33,7 @@ export function LeaderboardPage() {
       setLeaderboard(Array.isArray(boardData) ? boardData : boardData?.results || [])
       setStats(statsData)
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to load leaderboard'
+      const msg = getApiErrorMessage(err, 'Failed to load leaderboard')
       message.error(msg)
     } finally {
       setLoading(false)

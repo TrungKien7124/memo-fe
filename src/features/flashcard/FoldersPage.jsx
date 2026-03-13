@@ -4,6 +4,7 @@ import { Button, Modal, Form, Input, Spin, message } from 'antd'
 import { PlusOutlined, FolderOutlined } from '@ant-design/icons'
 import clsx from 'clsx'
 import { getFoldersAPI, createFolderAPI } from './flashcardService'
+import { applyFormApiError, getApiErrorMessage, parseApiError } from '../../utils/apiError'
 import { formatDate } from '../../utils/formatDate'
 import styles from './FoldersPage.module.css'
 
@@ -20,7 +21,7 @@ export function FoldersPage() {
       const data = await getFoldersAPI()
       setFolders(Array.isArray(data) ? data : data?.results || [])
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to load folders'
+      const msg = getApiErrorMessage(err, 'Failed to load folders')
       message.error(msg)
     } finally {
       setLoading(false)
@@ -40,8 +41,9 @@ export function FoldersPage() {
       form.resetFields()
       loadFolders()
     } catch (err) {
-      const msg = err.response?.data?.detail || 'Failed to create folder'
-      message.error(msg)
+      const parsedError = parseApiError(err, 'Failed to create folder')
+      applyFormApiError(form, parsedError)
+      message.error(parsedError.message)
     } finally {
       setSubmitting(false)
     }
