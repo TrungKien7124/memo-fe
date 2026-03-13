@@ -466,6 +466,32 @@ axiosClient.interceptors.response.use(
 export default axiosClient;
 ```
 
+### 3.5 Error Handling Contract (BE -> FE)
+
+Backend trả lỗi theo schema thống nhất:
+
+```json
+{
+  "message": "Error summary",
+  "old_data": { "email": "alice@example.com" },
+  "error": {
+    "email": ["Invalid email format"],
+    "password": ["Password is too short"]
+  }
+}
+```
+
+Frontend phải xử lý theo thứ tự:
+1. Hiển thị `message` trên toast/alert.
+2. Dùng `old_data` để `form.setFieldsValue(old_data)` (giữ dữ liệu user vừa nhập).
+3. Dùng `error` để map vào `Form.Item`:
+   - `form.setFields([{ name: 'email', errors: ['...'] }])`
+   - input lỗi sẽ tự đỏ + hiển thị message dưới ô input.
+
+> [!IMPORTANT]
+> Không parse lỗi bằng `detail` hoặc format cũ rời rạc theo từng màn hình.  
+> Luôn dùng utility chung để parse lỗi API và apply cho form.
+
 ### 3.4 Routing
 
 ```jsx
@@ -534,13 +560,24 @@ export default axiosClient;
 ### 5.1 Auth Flow
 
 ```
-1. User nhập email + password
+1. User nhập email (hoặc username) + password
 2. POST /api/auth/login/ → nhận { access, refresh, user }
 3. Lưu tokens vào localStorage, user info vào Redux (authSlice)
 4. Axios interceptor tự gắn access token vào header mọi request
 5. Access hết hạn (401) → interceptor tự gọi /api/auth/refresh/ → update token → retry request
 6. Nhiều request 401 đồng thời → queue lại, chỉ refresh 1 lần (mutex pattern)
 7. Refresh hết hạn → clear storage → redirect /login
+```
+
+### 5.4 Form Error Flow
+
+```
+1. User submit form (register, login, create folder, create flashcard, ...)
+2. API trả lỗi schema chuẩn: message + old_data + error
+3. FE show toast(message)
+4. FE setFieldsValue(old_data)
+5. FE setFields(error map) -> tô đỏ đúng ô field + hiển thị text lỗi
+6. User chỉnh ngay tại field lỗi, không cần nhập lại toàn bộ form
 ```
 
 ### 5.2 Review Session Flow (Duolingo-style)
