@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Form, Input, InputNumber, Modal, Space, Table, Typography, message } from 'antd'
-import { ArrowLeftOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Typography, message } from 'antd'
+import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   createAdminLessonAPI,
+  deleteAdminLessonAPI,
   getAdminLessonsAPI,
   getAdminModuleByIdAPI,
   updateAdminLessonAPI,
@@ -105,6 +106,17 @@ export function AdminModuleLessonsPage() {
     }
   }
 
+  async function handleDeleteLesson(lessonId) {
+    try {
+      await deleteAdminLessonAPI(lessonId)
+      message.success('Lesson deleted successfully')
+      loadData()
+    } catch (error) {
+      const parsed = parseApiError(error, 'Failed to delete lesson')
+      message.error(parsed.message)
+    }
+  }
+
   function handleBackToModules() {
     const courseId = module?.course
     if (!courseId) {
@@ -162,11 +174,24 @@ export function AdminModuleLessonsPage() {
             {
               title: 'Actions',
               key: 'actions',
-              width: 140,
+              width: 260,
               render: (_, record) => (
-                <Button icon={<EditOutlined />} onClick={() => handleOpenEditLessonModal(record)}>
-                  Edit
-                </Button>
+                <Space>
+                  <Button icon={<EditOutlined />} onClick={() => handleOpenEditLessonModal(record)}>
+                    Edit
+                  </Button>
+                  <Popconfirm
+                    title="Delete this lesson?"
+                    description="This action cannot be undone."
+                    okText="Delete"
+                    cancelText="Cancel"
+                    onConfirm={() => handleDeleteLesson(record.id)}
+                  >
+                    <Button danger icon={<DeleteOutlined />}>
+                      Delete
+                    </Button>
+                  </Popconfirm>
+                </Space>
               ),
             },
           ]}

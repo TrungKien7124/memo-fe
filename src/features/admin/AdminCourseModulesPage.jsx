@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Button, Card, Form, Input, InputNumber, Modal, Space, Table, Typography, message } from 'antd'
-import { ArrowLeftOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Card, Form, Input, InputNumber, Modal, Popconfirm, Space, Table, Typography, message } from 'antd'
+import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   createAdminModuleAPI,
+  deleteAdminModuleAPI,
   getAdminCourseByIdAPI,
   getAdminModulesAPI,
   updateAdminModuleAPI,
@@ -105,6 +106,17 @@ export function AdminCourseModulesPage() {
     }
   }
 
+  async function handleDeleteModule(moduleId) {
+    try {
+      await deleteAdminModuleAPI(moduleId)
+      message.success('Module deleted successfully')
+      loadData()
+    } catch (error) {
+      const parsed = parseApiError(error, 'Failed to delete module')
+      message.error(parsed.message)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -154,6 +166,17 @@ export function AdminCourseModulesPage() {
                   <Button icon={<EditOutlined />} onClick={() => handleOpenEditModuleModal(record)}>
                     Edit
                   </Button>
+                  <Popconfirm
+                    title="Delete this module?"
+                    description="All lessons under this module will be removed."
+                    okText="Delete"
+                    cancelText="Cancel"
+                    onConfirm={() => handleDeleteModule(record.id)}
+                  >
+                    <Button danger icon={<DeleteOutlined />}>
+                      Delete
+                    </Button>
+                  </Popconfirm>
                 </Space>
               ),
             },

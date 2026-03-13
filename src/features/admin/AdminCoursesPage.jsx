@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
-import { Button, Card, Form, Input, Modal, Select, Space, Table, Tag, Typography, message } from 'antd'
-import { EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { Button, Card, Form, Input, Modal, Popconfirm, Select, Space, Table, Tag, Typography, message } from 'antd'
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import {
   createAdminCourseAPI,
+  deleteAdminCourseAPI,
   getAdminCoursesAPI,
   updateAdminCourseAPI,
 } from './adminService'
@@ -104,6 +105,17 @@ export function AdminCoursesPage() {
     }
   }
 
+  async function handleDeleteCourse(courseId) {
+    try {
+      await deleteAdminCourseAPI(courseId)
+      message.success('Course deleted successfully')
+      loadCourses()
+    } catch (error) {
+      const parsed = parseApiError(error, 'Failed to delete course')
+      message.error(parsed.message)
+    }
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -166,6 +178,17 @@ export function AdminCoursesPage() {
                   <Button icon={<EditOutlined />} onClick={() => handleOpenEditCourseModal(record)}>
                     Edit
                   </Button>
+                  <Popconfirm
+                    title="Delete this course?"
+                    description="This action cannot be undone."
+                    okText="Delete"
+                    cancelText="Cancel"
+                    onConfirm={() => handleDeleteCourse(record.id)}
+                  >
+                    <Button danger icon={<DeleteOutlined />}>
+                      Delete
+                    </Button>
+                  </Popconfirm>
                 </Space>
               ),
             },

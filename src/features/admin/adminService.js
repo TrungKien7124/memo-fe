@@ -20,6 +20,11 @@ export async function updateAdminCourseAPI(courseId, payload) {
   return data
 }
 
+export async function deleteAdminCourseAPI(courseId) {
+  const { data } = await axiosClient.delete(`/api/cms/courses/${courseId}/`)
+  return data
+}
+
 export async function getAdminModulesAPI(courseId) {
   const { data } = await axiosClient.get('/api/cms/modules/', {
     params: courseId ? { course: courseId } : {},
@@ -42,6 +47,11 @@ export async function updateAdminModuleAPI(moduleId, payload) {
   return data
 }
 
+export async function deleteAdminModuleAPI(moduleId) {
+  const { data } = await axiosClient.delete(`/api/cms/modules/${moduleId}/`)
+  return data
+}
+
 export async function getAdminLessonsAPI(moduleId) {
   const { data } = await axiosClient.get('/api/cms/lessons/', {
     params: moduleId ? { module: moduleId } : {},
@@ -56,5 +66,10 @@ export async function createAdminLessonAPI(payload) {
 
 export async function updateAdminLessonAPI(lessonId, payload) {
   const { data } = await axiosClient.patch(`/api/cms/lessons/${lessonId}/`, payload)
+  return data
+}
+
+export async function deleteAdminLessonAPI(lessonId) {
+  const { data } = await axiosClient.delete(`/api/cms/lessons/${lessonId}/`)
   return data
 }
