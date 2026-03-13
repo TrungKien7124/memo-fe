@@ -506,7 +506,7 @@ Frontend phải xử lý theo thứ tự:
 
 /courses                → CoursesPage (browse courses)
 /courses/:id            → CourseDetailPage (modules + lessons)
-/courses/:id/lessons/:lessonId → LessonPage (typed runtime: video/text/quiz + final quiz submit)
+/courses/:id/lessons/:lessonId → LessonPage (typed runtime: video/text/quiz + quiz hearts per-answer submit)
 
 /flashcards             → FoldersPage (folder list)
 /flashcards/:folderId   → FlashcardListPage (cards in folder)
@@ -537,13 +537,13 @@ Frontend phải xử lý theo thứ tự:
 | 1 | **Login / Register** | Form đăng nhập/đăng ký, JWT auth | P0 |
 | 2 | **Dashboard** | Daily goal, streak, progress tổng quan, XP | P0 |
 | 3 | **Courses** | Browse + enroll khóa học | P0 |
-| 4 | **Lesson** | Typed lesson runtime (video/text/quiz), scoring + pass/fail for final quiz | P0 |
+| 4 | **Lesson** | Typed lesson runtime (video/text/quiz), hearts-based quiz flow with per-answer feedback | P0 |
 | 5 | **Flashcard Management** | CRUD folders + cards | P0 |
 | 6 | **Review Session** | Full-screen SRS ôn tập (Duolingo-style) | P0 |
 | 7 | **Speaking Session** | Full-screen AI conversation | P1 |
 | 8 | **Leaderboard** | Rankings theo XP / thời gian học | P1 |
 | 9 | **Profile / Stats** | XP, streak, learning history | P1 |
-| 10 | **Admin** | Layered CMS management: courses → modules → lessons with delete + typed lessons + final quiz setup (admin only) | P2 |
+| 10 | **Admin** | Layered CMS management: courses → modules → lessons with delete + typed lessons (admin only) | P2 |
 
 ### 4.2 Shared Components
 
@@ -663,8 +663,8 @@ Frontend phải xử lý theo thứ tự:
 ### Phase 4: Gamification & Polish (P1-P2)
 
 - [ ] **T11: Leaderboard + Profile** → Rankings page, profile stats (XP, streak, history chart) → Verify: Leaderboard sorted đúng
-- [ ] **T12: Admin pages** → Layered admin workflow with delete actions + typed lesson forms (video/text/quiz) + final module quiz flag (`is_final`) (admin only) → Verify: Admin can complete create/edit/delete and final quiz setup end-to-end
-- [ ] **T15: Final quiz unlock flow** → Student phải pass final quiz (>=80%) để mở module kế tiếp; runtime hỗ trợ submit answers + pass/fail feedback → Verify: Pass final quiz mở module kế tiếp, fail thì vẫn bị khóa
+- [ ] **T12: Admin pages** → Layered admin workflow with delete actions + typed lesson forms (video/text/quiz) (admin only) → Verify: Admin can complete create/edit/delete lessons end-to-end
+- [ ] **T15: Hearts + sequential unlock flow** → Mọi quiz có 5 hearts, submit từng câu; unlock lesson/module tuần tự theo completed → Verify: Hết hearts thì restart quiz, hoàn thành toàn bộ lesson của module mới mở module kế tiếp
 - [ ] **T13: Responsive + Polish** → Test responsive tất cả pages, animations, loading states, error handling → Verify: Responsive test 375px / 768px / 1024px / 1440px
 - [ ] **T14: Deploy Vercel** → `vercel.json` rewrites config, env variables, build test → Verify: `npm run build` thành công, deploy Vercel preview OK
 
