@@ -1,15 +1,23 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Spin } from 'antd'
+import { Alert, Card, Radio, Space, Spin, Typography } from 'antd'
 import { ArrowLeftOutlined, CloseOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import clsx from 'clsx'
 import { getLessonDetailAPI, markLessonProgressAPI } from './courseService'
 import styles from './LessonPage.module.css'
 
-const MOCK_LESSON = {
-  id: 1,
-  title: 'Greetings',
-  description: 'Learn how to say hello and goodbye.',
+const { Paragraph, Text } = Typography
+
+function normalizeDetailResponse(payload) {
+  if (payload?.data && !Array.isArray(payload.data))
+    return payload.data
+  return payload
+}
+
+function normalizeQuizQuestions(lesson) {
+  if (!Array.isArray(lesson?.quiz_questions))
+    return []
+  return lesson.quiz_questions
 }
 
 export function LessonPage() {
@@ -20,6 +28,8 @@ export function LessonPage() {
   const [completed, setCompleted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [selectedAnswers, setSelectedAnswers] = useState([])
+  const [quizResult, setQuizResult] = useState(null)
 
   useEffect(() => {
     async function fetchLesson() {
@@ -27,12 +37,12 @@ export function LessonPage() {
       setLoading(true)
       try {
         const res = await getLessonDetailAPI(lessonId)
-        const data = res?.data ?? res
+        const data = normalizeDetailResponse(res)
         setLesson(data)
         setCompleted(data?.completed ?? data?.progress?.completed ?? false)
         setProgress(data?.progress?.percent ?? (data?.completed ? 100 : 0))
       } catch {
-        setLesson({ ...MOCK_LESSON, id: lessonId })
+        setLesson(null)
         setCompleted(false)
         setProgress(0)
       } finally {
@@ -51,17 +61,114 @@ export function LessonPage() {
   }
 
   async function handleMarkComplete() {
+    if (!lesson) return
+
     setSubmitting(true)
     try {
-      await markLessonProgressAPI(lessonId, { completed: true, score: 100 })
+      if (lesson.lesson_type === 'quiz') {
+        const response = await markLessonProgressAPI(lessonId, { selected_answers: selectedAnswers })
+        const parsed = normalizeDetailResponse(response)
+        const result = response?.quiz_result || parsed?.quiz_result || null
+        setQuizResult(result)
+        const isPassed = Boolean(result?.passed)
+        setCompleted(isPassed)
+        setProgress(isPassed ? 100 : 0)
+        return
+      }
+
+      if (lesson.lesson_type === 'text') {
+        await markLessonProgressAPI(lessonId, { completed: true })
+        setCompleted(true)
+        setProgress(100)
+        return
+      }
+
+      const watchedSeconds = lesson.min_watch_time || 120
+      await markLessonProgressAPI(lessonId, { watched_seconds: watchedSeconds })
       setCompleted(true)
       setProgress(100)
     } catch {
-      setCompleted(true)
-      setProgress(100)
+      if (lesson.lesson_type !== 'quiz') {
+        setCompleted(true)
+        setProgress(100)
+      }
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function renderLessonBody() {
+    if (!lesson)
+      return <Alert type="error" showIcon message="Lesson not found." />
+
+    if (lesson.lesson_type === 'text') {
+      return (
+        <Card style={{ width: '100%', maxWidth: 900 }}>
+          <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>
+            {lesson.content_markdown || 'No content available for this text lesson.'}
+          </Paragraph>
+        </Card>
+      )
+    }
+
+    if (lesson.lesson_type === 'quiz') {
+      const questions = normalizeQuizQuestions(lesson)
+      return (
+        <div style={{ width: '100%', maxWidth: 900 }}>
+          {lesson.is_final && (
+            <Alert
+              type="warning"
+              showIcon
+              style={{ marginBottom: 16 }}
+              message="Final Quiz"
+              description="You must pass this quiz to unlock the next module."
+            />
+          )}
+
+          {quizResult && (
+            <Alert
+              type={quizResult.passed ? 'success' : 'error'}
+              showIcon
+              style={{ marginBottom: 16 }}
+              message={quizResult.passed ? 'Passed' : 'Not passed yet'}
+              description={`Score: ${quizResult.score}/${quizResult.total_questions} · Required: ${quizResult.pass_threshold_percent || 80}%`}
+            />
+          )}
+
+          <Space direction="vertical" style={{ width: '100%' }} size={16}>
+            {questions.map((question, index) => (
+              <Card key={`${lesson.id}-${index}`} title={`Question ${index + 1}`}>
+                <Paragraph>{question.question}</Paragraph>
+                <Radio.Group
+                  value={selectedAnswers[index]}
+                  onChange={(event) => {
+                    const next = [...selectedAnswers]
+                    next[index] = event.target.value
+                    setSelectedAnswers(next)
+                  }}
+                >
+                  <Space direction="vertical">
+                    {(question.options || []).map((option, optionIndex) => (
+                      <Radio key={`${lesson.id}-${index}-${optionIndex}`} value={optionIndex}>
+                        {option}
+                      </Radio>
+                    ))}
+                  </Space>
+                </Radio.Group>
+              </Card>
+            ))}
+          </Space>
+        </div>
+      )
+    }
+
+    return (
+      <div className={styles.videoPlaceholder}>
+        <div className={styles.playIcon}>
+          <PlayCircleOutlined />
+        </div>
+      </div>
+    )
   }
 
   if (loading) {
@@ -92,12 +199,13 @@ export function LessonPage() {
       </header>
 
       <main className={styles.content}>
-        <div className={styles.videoPlaceholder}>
-          <div className={styles.playIcon}>
-            <PlayCircleOutlined />
-          </div>
-        </div>
+        {renderLessonBody()}
         <h2 className={styles.lessonTitle}>{lesson?.title ?? 'Lesson'}</h2>
+        {lesson?.lesson_type === 'quiz' && (
+          <Text type="secondary" style={{ marginTop: 8 }}>
+            Choose one answer for each question, then submit.
+          </Text>
+        )}
       </main>
 
       <footer
@@ -110,9 +218,15 @@ export function LessonPage() {
           type="button"
           className={styles.completeBtn}
           onClick={handleMarkComplete}
-          disabled={completed || submitting}
+          disabled={completed || submitting || (lesson?.lesson_type === 'quiz' && !normalizeQuizQuestions(lesson).length)}
         >
-          {completed ? 'Completed!' : submitting ? 'Saving...' : 'Mark Complete'}
+          {completed
+            ? 'Completed!'
+            : submitting
+              ? 'Saving...'
+              : lesson?.lesson_type === 'quiz'
+                ? 'Submit Quiz'
+                : 'Mark Complete'}
         </button>
       </footer>
     </div>
