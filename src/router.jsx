@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { MainLayout } from './components/Layout/MainLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
+import { AdminRoute } from './components/AdminRoute'
 
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
@@ -16,6 +17,7 @@ import { SpeakingPage } from './features/speaking/SpeakingPage'
 import { SpeakingSession } from './features/speaking/SpeakingSession'
 import { LeaderboardPage } from './features/gamification/LeaderboardPage'
 import { ProfileStatsPage } from './features/gamification/ProfileStatsPage'
+import { AdminCoursesPage } from './features/admin/AdminCoursesPage'
 
 export function AppRouter() {
   return (
@@ -34,6 +36,10 @@ export function AppRouter() {
           <Route path="/speaking" element={<SpeakingPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/profile" element={<ProfileStatsPage />} />
+
+          <Route element={<AdminRoute />}>
+            <Route path="/admin/courses" element={<AdminCoursesPage />} />
+          </Route>
         </Route>
 
         {/* Full-screen routes (no sidebar) */}

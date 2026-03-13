@@ -11,7 +11,7 @@ import {
   UserOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons'
-import { API_URL, USER_ROLES } from '../../utils/constants'
+import { USER_ROLES } from '../../utils/constants'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -28,7 +28,6 @@ export function Sidebar({ className, isDrawer = false }) {
   const location = useLocation()
   const currentUserRole = useSelector((state) => state.auth?.user?.role)
   const isAdmin = currentUserRole === USER_ROLES.ADMIN
-  const adminPanelUrl = `${API_URL.replace(/\/$/, '')}/admin/`
 
   return (
     <div className={clsx(styles.sidebar, isDrawer && styles.drawerSidebar, className)}>
@@ -55,15 +54,14 @@ export function Sidebar({ className, isDrawer = false }) {
         })}
 
         {isAdmin && (
-          <a
-            href={adminPanelUrl}
+          <Link
+            to="/admin/courses"
             className={styles.adminNavItem}
-            target="_blank"
-            rel="noreferrer noopener"
+            title="Admin management pages"
           >
             <SafetyCertificateOutlined className={styles.navIcon} />
-            <span>Admin Panel</span>
-          </a>
+            <span>Admin</span>
+          </Link>
         )}
       </nav>
     </div>
