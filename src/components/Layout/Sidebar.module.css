@@ -85,6 +85,11 @@
   background: var(--color-primary-surface);
 }
 
+.adminNavItemActive {
+  background: var(--color-primary-surface);
+  color: var(--color-primary);
+}
+
 .navItemActive {
   background: var(--color-primary-light);
   color: var(--color-primary);

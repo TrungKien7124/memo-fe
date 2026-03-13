@@ -56,7 +56,10 @@ export function Sidebar({ className, isDrawer = false }) {
         {isAdmin && (
           <Link
             to="/admin/courses"
-            className={styles.adminNavItem}
+            className={clsx(
+              styles.adminNavItem,
+              location.pathname.startsWith('/admin') && styles.adminNavItemActive
+            )}
             title="Admin management pages"
           >
             <SafetyCertificateOutlined className={styles.navIcon} />

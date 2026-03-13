@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { MainLayout } from './components/Layout/MainLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
+import { AdminLayout } from './components/admin/AdminLayout'
 
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
@@ -18,6 +19,8 @@ import { SpeakingSession } from './features/speaking/SpeakingSession'
 import { LeaderboardPage } from './features/gamification/LeaderboardPage'
 import { ProfileStatsPage } from './features/gamification/ProfileStatsPage'
 import { AdminCoursesPage } from './features/admin/AdminCoursesPage'
+import { AdminCourseModulesPage } from './features/admin/AdminCourseModulesPage'
+import { AdminModuleLessonsPage } from './features/admin/AdminModuleLessonsPage'
 
 export function AppRouter() {
   return (
@@ -37,8 +40,14 @@ export function AppRouter() {
           <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/profile" element={<ProfileStatsPage />} />
 
-          <Route element={<AdminRoute />}>
+        </Route>
+
+        <Route element={<AdminRoute />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<Navigate to="/admin/courses" replace />} />
             <Route path="/admin/courses" element={<AdminCoursesPage />} />
+            <Route path="/admin/courses/:courseId/modules" element={<AdminCourseModulesPage />} />
+            <Route path="/admin/modules/:moduleId/lessons" element={<AdminModuleLessonsPage />} />
           </Route>
         </Route>
 
