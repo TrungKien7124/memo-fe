@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { store } from '../app/store'
+import { logout, tokenRefreshed } from '../features/auth/authSlice'
 import { API_URL } from '../utils/constants'
 
 const axiosClient = axios.create({
@@ -50,15 +52,14 @@ axiosClient.interceptors.response.use(
         if (!accessToken) throw new Error('Invalid refresh response format')
         localStorage.setItem('access_token', accessToken)
         if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
+        store.dispatch(tokenRefreshed({ access: accessToken, refresh: refreshToken }))
 
         processQueue(null, accessToken)
         originalRequest.headers.Authorization = `Bearer ${accessToken}`
         return axiosClient(originalRequest)
       } catch (err) {
         processQueue(err, null)
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('refresh_token')
-        localStorage.removeItem('user')
+        store.dispatch(logout())
         window.location.href = '/login'
         return Promise.reject(err)
       } finally {

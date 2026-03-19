@@ -18,15 +18,15 @@ export function RegisterPage() {
     setLocalLoading(true)
     dispatch(setLoading())
     try {
-      const { data } = await registerAPI({
+      const response = await registerAPI({
         username: values.username,
         email: values.email,
         password: values.password,
         confirm_password: values.confirm_password,
       })
-      const user = data.data?.user
-      const access = data.data?.tokens?.access
-      const refresh = data.data?.tokens?.refresh
+      const user = response?.user
+      const access = response?.tokens?.access
+      const refresh = response?.tokens?.refresh
       if (!user || !access || !refresh) throw new Error('Invalid register response format')
       dispatch(loginSuccess({
         user,

@@ -26,6 +26,7 @@ const authSlice = createSlice({
     },
     tokenRefreshed(state, action) {
       state.accessToken = action.payload.access
+      state.isAuthenticated = Boolean(action.payload.access)
       localStorage.setItem('access_token', action.payload.access)
       if (action.payload.refresh) {
         state.refreshToken = action.payload.refresh
