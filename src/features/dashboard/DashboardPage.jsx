@@ -37,13 +37,7 @@ export function DashboardPage() {
         ])
 
         if (xpRes.status === 'fulfilled') {
-          const data = xpRes.value?.data ?? xpRes.value
-          setXpSummary({
-            today_xp: data.today_xp ?? data.todayXp ?? 0,
-            daily_goal: data.daily_goal ?? data.dailyGoal ?? 50,
-            streak: data.streak ?? 0,
-            last_seven_days: data.last_seven_days ?? data.lastSevenDays ?? [],
-          })
+          setXpSummary(xpRes.value)
         } else {
           setXpSummary({
             today_xp: 25,
@@ -54,17 +48,14 @@ export function DashboardPage() {
         }
 
         if (dueRes.status === 'fulfilled') {
-          const data = dueRes.value?.data ?? dueRes.value
-          const count = Array.isArray(data) ? data.length : data?.count ?? data?.results?.length ?? 0
+          const count = dueRes.value.length
           setDueCount(count)
         } else {
           setDueCount(12)
         }
 
         if (coursesRes.status === 'fulfilled') {
-          const data = coursesRes.value?.data ?? coursesRes.value?.results ?? coursesRes.value
-          const list = Array.isArray(data) ? data : []
-          setRecentCourses(list.slice(0, 6))
+          setRecentCourses(coursesRes.value.slice(0, 6))
         } else {
           setRecentCourses([
             { id: 1, title: 'English Basics', description: 'Start here', lesson_count: 12 },
@@ -127,7 +118,7 @@ export function DashboardPage() {
                 <div className={styles.courseCardImage}>📖</div>
                 <p className={styles.courseCardTitle}>{course.title}</p>
                 <p className={styles.courseCardMeta}>
-                  {course.lesson_count ?? course.lessonCount ?? 0} lessons
+                  {course.lesson_count ?? 0} lessons
                 </p>
               </div>
             ))}

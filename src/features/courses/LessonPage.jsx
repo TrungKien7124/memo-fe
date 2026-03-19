@@ -9,12 +9,6 @@ import styles from './LessonPage.module.css'
 const { Paragraph, Text } = Typography
 const QUIZ_MAX_HEARTS = 5
 
-function normalizeDetailResponse(payload) {
-  if (payload?.data && !Array.isArray(payload.data))
-    return payload.data
-  return payload
-}
-
 function normalizeQuizQuestions(lesson) {
   if (!Array.isArray(lesson?.quiz_questions))
     return []
@@ -44,18 +38,18 @@ export function LessonPage() {
       if (!lessonId) return
       setLoading(true)
       try {
-        const res = await getLessonDetailAPI(lessonId)
-        const data = normalizeDetailResponse(res)
-        const questions = normalizeQuizQuestions(data)
+        const lessonData = await getLessonDetailAPI(lessonId)
+        const questions = normalizeQuizQuestions(lessonData)
         const totalQuestions = questions.length
-        setLesson(data)
-        setCompleted(data?.completed ?? data?.progress?.completed ?? false)
-        setProgress(data?.progress?.percent ?? (data?.completed ? 100 : 0))
+        setLesson(lessonData)
+        const isCompleted = lessonData?.status === 'completed'
+        setCompleted(isCompleted)
+        setProgress(isCompleted ? 100 : 0)
         setQuizRuntime({
-          hearts_left: data?.progress?.quiz_hearts_left ?? QUIZ_MAX_HEARTS,
-          current_question_index: data?.progress?.quiz_current_question_index ?? 0,
-          correct_count: data?.progress?.quiz_correct_count ?? 0,
-          total_questions: data?.progress?.quiz_total_questions ?? totalQuestions,
+          hearts_left: QUIZ_MAX_HEARTS,
+          current_question_index: 0,
+          correct_count: 0,
+          total_questions: totalQuestions,
           max_hearts: QUIZ_MAX_HEARTS,
         })
         setSelectedAnswer(null)
@@ -94,22 +88,20 @@ export function LessonPage() {
         if (!Number.isInteger(selectedAnswer))
           return
 
-        const response = await submitQuizAnswerAPI(lessonId, {
+        const { progress: updatedProgress, quizRuntime: runtime } = await submitQuizAnswerAPI(lessonId, {
           question_index: currentQuestionIndex,
           selected_answer: selectedAnswer,
         })
-        const parsed = normalizeDetailResponse(response)
-        const result = response?.quiz_result || parsed?.quiz_result || null
-        setQuizResult(result)
+        setQuizResult(runtime)
         const nextRuntime = {
-          hearts_left: result?.hearts_left ?? parsed?.quiz_hearts_left ?? quizRuntime.hearts_left,
-          current_question_index: result?.current_question_index ?? parsed?.quiz_current_question_index ?? quizRuntime.current_question_index,
-          correct_count: result?.correct_count ?? parsed?.quiz_correct_count ?? quizRuntime.correct_count,
-          total_questions: result?.total_questions ?? parsed?.quiz_total_questions ?? totalQuestions,
-          max_hearts: result?.max_hearts ?? quizRuntime.max_hearts ?? QUIZ_MAX_HEARTS,
+          hearts_left: runtime?.hearts_left ?? quizRuntime.hearts_left,
+          current_question_index: runtime?.current_question_index ?? quizRuntime.current_question_index,
+          correct_count: runtime?.correct_count ?? quizRuntime.correct_count,
+          total_questions: runtime?.total_questions ?? totalQuestions,
+          max_hearts: runtime?.max_hearts ?? QUIZ_MAX_HEARTS,
         }
         setQuizRuntime(nextRuntime)
-        const isCompleted = Boolean(result?.completed)
+        const isCompleted = Boolean(updatedProgress?.completed)
         setCompleted(isCompleted)
         if (nextRuntime.total_questions > 0) {
           const percentage = Math.round((nextRuntime.correct_count / nextRuntime.total_questions) * 100)
@@ -122,16 +114,18 @@ export function LessonPage() {
       }
 
       if (lesson.lesson_type === 'text') {
-        await markLessonProgressAPI(lessonId, { completed: true })
-        setCompleted(true)
-        setProgress(100)
+        const { progress: updatedProgress } = await markLessonProgressAPI(lessonId, { completed: true })
+        const isCompleted = Boolean(updatedProgress?.completed)
+        setCompleted(isCompleted)
+        setProgress(isCompleted ? 100 : 0)
         return
       }
 
       const watchedSeconds = lesson.min_watch_time || 120
-      await markLessonProgressAPI(lessonId, { watched_seconds: watchedSeconds })
-      setCompleted(true)
-      setProgress(100)
+      const { progress: updatedProgress } = await markLessonProgressAPI(lessonId, { watched_seconds: watchedSeconds })
+      const isCompleted = Boolean(updatedProgress?.completed)
+      setCompleted(isCompleted)
+      setProgress(isCompleted ? 100 : progress)
     } catch {
       if (lesson.lesson_type !== 'quiz') {
         setCompleted(true)

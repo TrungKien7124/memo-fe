@@ -15,8 +15,8 @@ export function ReviewHistory() {
   async function loadHistory() {
     setLoading(true)
     try {
-      const data = await getReviewHistoryAPI()
-      setSessions(Array.isArray(data) ? data : data?.results || [])
+      const sessionsData = await getReviewHistoryAPI()
+      setSessions(sessionsData)
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Failed to load history')
       message.error(msg)
@@ -58,15 +58,15 @@ export function ReviewHistory() {
             <div key={session.id} className={styles.card}>
               <div>
                 <div className={styles.date}>
-                  {formatDateTime(session.created_at ?? session.started_at ?? session.date)}
+                  {formatDateTime(session.createdAt || session.startedAt)}
                 </div>
                 <div className={styles.meta}>
-                  {session.cards_reviewed ?? session.reviewed_count ?? 0} cards reviewed
+                  {session.cardsReviewed} cards reviewed
                 </div>
               </div>
               <div className={styles.right}>
                 <div className={styles.score}>
-                  +{formatXP(session.xp_earned ?? session.xp ?? 0)} XP
+                  +{formatXP(session.xpEarned)} XP
                 </div>
               </div>
             </div>

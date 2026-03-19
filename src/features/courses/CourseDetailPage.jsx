@@ -6,24 +6,6 @@ import clsx from 'clsx'
 import { getCourseDetailAPI, getModulesAPI, getLessonsAPI } from './courseService'
 import styles from './CourseDetailPage.module.css'
 
-function normalizeListResponse(payload) {
-  if (Array.isArray(payload))
-    return payload
-  if (Array.isArray(payload?.data))
-    return payload.data
-  if (Array.isArray(payload?.results))
-    return payload.results
-  if (Array.isArray(payload?.data?.results))
-    return payload.data.results
-  return []
-}
-
-function normalizeDetailResponse(payload) {
-  if (payload?.data && !Array.isArray(payload.data))
-    return payload.data
-  return payload
-}
-
 function LessonIcon({ status }) {
   if (status === 'completed') return <CheckOutlined />
   if (status === 'current') return <StarOutlined />
@@ -47,16 +29,12 @@ export function CourseDetailPage() {
           getCourseDetailAPI(id),
           getModulesAPI(id),
         ])
-        const courseData = normalizeDetailResponse(courseRes)
-        setCourse(courseData)
-
-        const modArray = normalizeListResponse(modulesRes)
+        setCourse(courseRes)
 
         const withLessons = await Promise.all(
-          modArray.map(async (mod) => {
+          modulesRes.map(async (mod) => {
             try {
-              const lessonsRes = await getLessonsAPI(mod.id)
-              const lessons = normalizeListResponse(lessonsRes)
+              const lessons = await getLessonsAPI(mod.id)
               return {
                 ...mod,
                 lessons,

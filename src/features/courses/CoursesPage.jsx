@@ -20,9 +20,8 @@ export function CoursesPage() {
     async function fetchCourses() {
       setLoading(true)
       try {
-        const res = await getCoursesAPI()
-        const data = res?.data ?? res?.results ?? res
-        setCourses(Array.isArray(data) ? data : MOCK_COURSES)
+        const coursesData = await getCoursesAPI()
+        setCourses(Array.isArray(coursesData) ? coursesData : MOCK_COURSES)
       } catch (err) {
         setError(err?.message || 'Failed to load courses')
         setCourses(MOCK_COURSES)
@@ -58,7 +57,7 @@ export function CoursesPage() {
               {course.description || 'Start learning today.'}
             </p>
             <p className={styles.cardMeta}>
-              {course.lesson_count ?? course.lessonCount ?? 0} lessons
+              {course.lesson_count ?? 0} lessons
             </p>
           </div>
         ))}

@@ -33,9 +33,8 @@ export function ReviewSessionPage() {
     setLoading(true)
     try {
       const session = await createReviewSessionAPI()
-      setSessionId(session?.id)
-      const dueData = await getDueCardsAPI()
-      const cardList = Array.isArray(dueData) ? dueData : dueData?.results || []
+      setSessionId(session.id)
+      const cardList = await getDueCardsAPI()
       setCards(cardList)
       setCurrentIndex(0)
       setFlipped(false)
@@ -65,8 +64,8 @@ export function ReviewSessionPage() {
 
     try {
       await submitCardReviewAPI({
-        session: sessionId,
-        card: currentCard.id ?? currentCard.card,
+        sessionId,
+        cardId: currentCard.id,
         rating,
       })
     } catch (err) {
@@ -82,10 +81,7 @@ export function ReviewSessionPage() {
 
     if (isLastCard) {
       try {
-        await endReviewSessionAPI(sessionId, {
-          xp_earned: result.xp + xp,
-          cards_reviewed: result.reviewed + 1,
-        })
+        await endReviewSessionAPI(sessionId)
       } catch {
         // ignore
       }
@@ -190,13 +186,13 @@ export function ReviewSessionPage() {
             <div className={styles.cardInner}>
               <div className={styles.cardFace}>
                 <span className={styles.cardText}>
-                  {currentCard?.flashcard?.front ?? currentCard?.front ?? 'No front'}
+                  {currentCard?.frontText || 'No front'}
                 </span>
                 <span className={styles.hint}>Tap to flip</span>
               </div>
               <div className={clsx(styles.cardFace, styles.cardBack)}>
                 <span className={styles.cardText}>
-                  {currentCard?.flashcard?.back ?? currentCard?.back ?? 'No back'}
+                  {currentCard?.backText || 'No back'}
                 </span>
               </div>
             </div>
