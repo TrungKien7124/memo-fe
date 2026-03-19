@@ -10,66 +10,54 @@ import { getXPSummaryAPI, getDueCardsAPI } from './dashboardService'
 import { getCoursesAPI } from '../courses/courseService'
 import styles from './DashboardPage.module.css'
 
-const MOCK_ACTIVITIES = [
-  { type: 'lesson', text: 'Completed "Greetings" lesson', time: '2 hours ago' },
-  { type: 'flashcard', text: 'Reviewed 15 flashcards', time: '5 hours ago' },
-  { type: 'streak', text: 'Maintained 3-day streak!', time: 'Yesterday' },
-]
-
 export function DashboardPage() {
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [errorMessages, setErrorMessages] = useState([])
   const [xpSummary, setXpSummary] = useState(null)
-  const [dueCount, setDueCount] = useState(0)
+  const [dueCount, setDueCount] = useState(null)
   const [recentCourses, setRecentCourses] = useState([])
-  const [activities, setActivities] = useState(MOCK_ACTIVITIES)
   const navigate = useNavigate()
 
   useEffect(() => {
     async function fetchData() {
       setLoading(true)
-      setError(null)
+      setErrorMessages([])
       try {
         const [xpRes, dueRes, coursesRes] = await Promise.allSettled([
           getXPSummaryAPI(),
           getDueCardsAPI(),
           getCoursesAPI(),
         ])
+        const nextErrors = []
 
         if (xpRes.status === 'fulfilled') {
           setXpSummary(xpRes.value)
         } else {
-          setXpSummary({
-            today_xp: 25,
-            daily_goal: 50,
-            streak: 3,
-            last_seven_days: [true, true, false, true, true, true, true],
-          })
+          setXpSummary(null)
+          nextErrors.push('XP summary is unavailable.')
         }
 
         if (dueRes.status === 'fulfilled') {
           const count = dueRes.value.length
           setDueCount(count)
         } else {
-          setDueCount(12)
+          setDueCount(null)
+          nextErrors.push('Due cards count is unavailable.')
         }
 
         if (coursesRes.status === 'fulfilled') {
           setRecentCourses(coursesRes.value.slice(0, 6))
         } else {
-          setRecentCourses([
-            { id: 1, title: 'English Basics', description: 'Start here', lesson_count: 12 },
-            { id: 2, title: 'Daily Conversations', description: 'Everyday phrases', lesson_count: 24 },
-          ])
+          setRecentCourses([])
+          nextErrors.push('Recent courses are unavailable.')
         }
+
+        setErrorMessages(nextErrors)
       } catch (err) {
-        setError(err?.message || 'Failed to load dashboard')
-        setXpSummary({ today_xp: 25, daily_goal: 50, streak: 3, last_seven_days: [true, true, false, true, true, true, true] })
-        setDueCount(12)
-        setRecentCourses([
-          { id: 1, title: 'English Basics', description: 'Start here', lesson_count: 12 },
-          { id: 2, title: 'Daily Conversations', description: 'Everyday phrases', lesson_count: 24 },
-        ])
+        setErrorMessages([err?.message || 'Failed to load dashboard.'])
+        setXpSummary(null)
+        setDueCount(null)
+        setRecentCourses([])
       } finally {
         setLoading(false)
       }
@@ -85,50 +73,58 @@ export function DashboardPage() {
     )
   }
 
-  const xp = xpSummary?.today_xp ?? 0
-  const goal = xpSummary?.daily_goal ?? 50
-  const streak = xpSummary?.streak ?? 0
+  const totalXp = xpSummary?.total_xp ?? null
+  const goal = xpSummary?.daily_goal ?? null
+  const streak = xpSummary?.streak ?? null
   const lastSeven = xpSummary?.last_seven_days ?? []
 
   return (
     <div className={styles.page}>
       <div className={styles.feedWrapper}>
         <h1 className={styles.feedTitle}>Learn</h1>
-        {error && <div className={styles.errorBanner}>{error}</div>}
+        {errorMessages.length > 0 && (
+          <div className={styles.errorBanner}>
+            {errorMessages.join(' ')}
+          </div>
+        )}
         <div className={styles.feedCard}>
           <div className={styles.welcomeSection}>
             <p className={styles.welcomeText}>Welcome back! Ready to learn?</p>
             <div className={styles.statsRow}>
               <div className={clsx(styles.statItem, styles.statItemXp)}>
-                <TrophyOutlined /> {xp} XP today
+                <TrophyOutlined /> {totalXp == null ? 'XP unavailable' : `${totalXp} total XP`}
               </div>
               <div className={clsx(styles.statItem, styles.statItemDue)}>
-                <SyncOutlined /> {dueCount} cards due
+                <SyncOutlined /> {dueCount == null ? 'Due count unavailable' : `${dueCount} cards due`}
               </div>
             </div>
           </div>
           <h3 className={styles.sectionTitle}>Continue Learning</h3>
           <div className={styles.courseGrid}>
-            {recentCourses.map((course) => (
-              <div
-                key={course.id}
-                className={styles.courseCard}
-                onClick={() => navigate(`/courses/${course.id}`)}
-              >
-                <div className={styles.courseCardImage}>📖</div>
-                <p className={styles.courseCardTitle}>{course.title}</p>
-                <p className={styles.courseCardMeta}>
-                  {course.lesson_count ?? 0} lessons
-                </p>
-              </div>
-            ))}
+            {recentCourses.length === 0 ? (
+              <p className={styles.welcomeText}>No course data is available right now.</p>
+            ) : (
+              recentCourses.map((course) => (
+                <div
+                  key={course.id}
+                  className={styles.courseCard}
+                  onClick={() => navigate(`/courses/${course.id}`)}
+                >
+                  <div className={styles.courseCardImage}>📖</div>
+                  <p className={styles.courseCardTitle}>{course.title}</p>
+                  <p className={styles.courseCardMeta}>
+                    {course.lesson_count ?? 0} lessons
+                  </p>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
       <aside className={styles.stickyWrapper}>
-        <DailyGoalWidget currentXP={xp} targetXP={goal} />
-        <StreakWidget streak={streak} lastSevenDays={lastSeven} />
-        <RecentActivity activities={activities} />
+        <DailyGoalWidget currentXP={totalXp} targetXP={goal} isUnavailable={!xpSummary || goal == null} />
+        <StreakWidget streak={streak} lastSevenDays={lastSeven} isUnavailable={!xpSummary || streak == null} />
+        <RecentActivity activities={[]} isUnavailable />
       </aside>
     </div>
   )

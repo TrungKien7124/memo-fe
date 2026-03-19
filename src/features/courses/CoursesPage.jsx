@@ -4,12 +4,6 @@ import { Spin } from 'antd'
 import { getCoursesAPI } from './courseService'
 import styles from './CoursesPage.module.css'
 
-const MOCK_COURSES = [
-  { id: 1, title: 'English Basics', description: 'Learn the fundamentals: alphabet, numbers, and simple phrases.', lesson_count: 12 },
-  { id: 2, title: 'Daily Conversations', description: 'Everyday phrases for greeting, shopping, and more.', lesson_count: 24 },
-  { id: 3, title: 'Travel English', description: 'Essential vocabulary and phrases for traveling abroad.', lesson_count: 18 },
-]
-
 export function CoursesPage() {
   const [loading, setLoading] = useState(true)
   const [courses, setCourses] = useState([])
@@ -19,12 +13,13 @@ export function CoursesPage() {
   useEffect(() => {
     async function fetchCourses() {
       setLoading(true)
+      setError(null)
       try {
         const coursesData = await getCoursesAPI()
-        setCourses(Array.isArray(coursesData) ? coursesData : MOCK_COURSES)
+        setCourses(Array.isArray(coursesData) ? coursesData : [])
       } catch (err) {
         setError(err?.message || 'Failed to load courses')
-        setCourses(MOCK_COURSES)
+        setCourses([])
       } finally {
         setLoading(false)
       }
@@ -44,6 +39,9 @@ export function CoursesPage() {
     <div className={styles.page}>
       <h1 className={styles.title}>Courses</h1>
       {error && <p style={{ color: 'var(--color-error)', marginBottom: 'var(--space-4)' }}>{error}</p>}
+      {courses.length === 0 ? (
+        <p style={{ color: 'var(--color-text-secondary)' }}>No courses are available right now.</p>
+      ) : (
       <div className={styles.grid}>
         {courses.map((course) => (
           <div
@@ -62,6 +60,7 @@ export function CoursesPage() {
           </div>
         ))}
       </div>
+      )}
     </div>
   )
 }

@@ -19,6 +19,7 @@ export function LessonPage() {
   const { id, lessonId } = useParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [lesson, setLesson] = useState(null)
   const [completed, setCompleted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
@@ -37,6 +38,7 @@ export function LessonPage() {
     async function fetchLesson() {
       if (!lessonId) return
       setLoading(true)
+      setError(null)
       try {
         const lessonData = await getLessonDetailAPI(lessonId)
         const questions = normalizeQuizQuestions(lessonData)
@@ -54,10 +56,11 @@ export function LessonPage() {
         })
         setSelectedAnswer(null)
         setQuizResult(null)
-      } catch {
+      } catch (err) {
         setLesson(null)
         setCompleted(false)
         setProgress(0)
+        setError(err?.message || 'Failed to load lesson.')
       } finally {
         setLoading(false)
       }
@@ -77,6 +80,7 @@ export function LessonPage() {
     if (!lesson) return
 
     setSubmitting(true)
+    setError(null)
     try {
       if (lesson.lesson_type === 'quiz') {
         const currentQuestionIndex = quizRuntime.current_question_index ?? 0
@@ -126,11 +130,8 @@ export function LessonPage() {
       const isCompleted = Boolean(updatedProgress?.completed)
       setCompleted(isCompleted)
       setProgress(isCompleted ? 100 : progress)
-    } catch {
-      if (lesson.lesson_type !== 'quiz') {
-        setCompleted(true)
-        setProgress(100)
-      }
+    } catch (err) {
+      setError(err?.message || 'Failed to save lesson progress.')
     } finally {
       setSubmitting(false)
     }
@@ -138,7 +139,7 @@ export function LessonPage() {
 
   function renderLessonBody() {
     if (!lesson)
-      return <Alert type="error" showIcon message="Lesson not found." />
+      return <Alert type="error" showIcon message={error || 'Lesson not found.'} />
 
     if (lesson.lesson_type === 'text') {
       return (
@@ -250,6 +251,14 @@ export function LessonPage() {
       </header>
 
       <main className={styles.content}>
+        {error && lesson && (
+          <Alert
+            type="error"
+            showIcon
+            message={error}
+            style={{ width: '100%', maxWidth: 900, marginBottom: 16 }}
+          />
+        )}
         {renderLessonBody()}
         <h2 className={styles.lessonTitle}>{lesson?.title ?? 'Lesson'}</h2>
         {lesson?.lesson_type === 'quiz' && (

@@ -17,6 +17,7 @@ export function CourseDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
+  const [errorMessages, setErrorMessages] = useState([])
   const [course, setCourse] = useState(null)
   const [modulesWithLessons, setModulesWithLessons] = useState([])
 
@@ -24,12 +25,14 @@ export function CourseDetailPage() {
     async function fetchData() {
       if (!id) return
       setLoading(true)
+      setErrorMessages([])
       try {
         const [courseRes, modulesRes] = await Promise.all([
           getCourseDetailAPI(id),
           getModulesAPI(id),
         ])
         setCourse(courseRes)
+        const nextErrors = []
 
         const withLessons = await Promise.all(
           modulesRes.map(async (mod) => {
@@ -40,14 +43,21 @@ export function CourseDetailPage() {
                 lessons,
               }
             } catch {
-              return { ...mod, lessons: [] }
+              nextErrors.push(`Lessons are unavailable for module "${mod.title}".`)
+              return {
+                ...mod,
+                lessons: [],
+                lessons_error: 'Lessons are unavailable for this module.',
+              }
             }
           })
         )
         setModulesWithLessons(withLessons)
-      } catch {
+        setErrorMessages(nextErrors)
+      } catch (err) {
         setCourse(null)
         setModulesWithLessons([])
+        setErrorMessages([err?.message || 'Failed to load course details.'])
       } finally {
         setLoading(false)
       }
@@ -64,7 +74,7 @@ export function CourseDetailPage() {
   }
 
   if (!course) {
-    return <p>Course not found.</p>
+    return <p style={{ color: 'var(--color-error)', padding: 'var(--space-6)' }}>{errorMessages[0] || 'Course not found.'}</p>
   }
 
   function handleLessonClick(lesson, mod) {
@@ -79,10 +89,20 @@ export function CourseDetailPage() {
         <h1 className={styles.title}>{course.title}</h1>
         <p className={styles.description}>{course.description || 'Start your learning journey.'}</p>
       </header>
+      {errorMessages.length > 0 && (
+        <p style={{ color: 'var(--color-error)', marginBottom: 'var(--space-4)' }}>
+          {errorMessages.join(' ')}
+        </p>
+      )}
 
-      {modulesWithLessons.map((mod, modIdx) => (
+      {modulesWithLessons.map((mod) => (
         <section key={mod.id} className={styles.moduleSection}>
           <div className={styles.moduleBanner}>{mod.title}</div>
+          {mod.lessons_error && (
+            <p style={{ color: 'var(--color-error)', marginBottom: 'var(--space-4)' }}>
+              {mod.lessons_error}
+            </p>
+          )}
           <div className={styles.lessonsPath}>
             {(mod.lessons || []).map((lesson, idx) => (
               <div key={lesson.id}>

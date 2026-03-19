@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, Spin, message } from 'antd'
 import { CloseOutlined } from '@ant-design/icons'
@@ -27,9 +27,11 @@ export function ReviewSessionPage() {
   const [flipped, setFlipped] = useState(false)
   const [feedback, setFeedback] = useState(null)
   const [done, setDone] = useState(false)
+  const [completionError, setCompletionError] = useState(null)
+  const [isCompletingSession, setIsCompletingSession] = useState(false)
   const [result, setResult] = useState({ xp: 0, reviewed: 0, correct: 0 })
 
-  async function startSession() {
+  const startSession = useCallback(async () => {
     setLoading(true)
     try {
       const session = await createReviewSessionAPI()
@@ -40,6 +42,8 @@ export function ReviewSessionPage() {
       setFlipped(false)
       setFeedback(null)
       setDone(false)
+      setCompletionError(null)
+      setIsCompletingSession(false)
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Failed to start review')
       message.error(msg)
@@ -47,20 +51,33 @@ export function ReviewSessionPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [navigate])
 
   useEffect(() => {
     startSession()
-  }, [])
+  }, [startSession])
 
   const currentCard = cards[currentIndex]
   const progress = cards.length > 0 ? ((currentIndex + (flipped ? 1 : 0)) / cards.length) * 100 : 0
   const isLastCard = currentIndex >= cards.length - 1 && flipped
 
+  async function finalizeSession() {
+    if (!sessionId) return
+
+    try {
+      await endReviewSessionAPI(sessionId)
+      setCompletionError(null)
+      setDone(true)
+    } catch (err) {
+      setCompletionError(getApiErrorMessage(err, 'Review completion could not be confirmed'))
+    }
+  }
+
   async function handleRating(rating) {
-    if (!currentCard || !sessionId) return
+    if (!currentCard || !sessionId || isCompletingSession) return
 
     setFeedback(rating)
+    setCompletionError(null)
 
     try {
       await submitCardReviewAPI({
@@ -69,7 +86,9 @@ export function ReviewSessionPage() {
         rating,
       })
     } catch (err) {
+      setFeedback(null)
       message.error(getApiErrorMessage(err, 'Failed to submit'))
+      return
     }
 
     const xp = XP_PER_RATING[rating] ?? 10
@@ -80,12 +99,8 @@ export function ReviewSessionPage() {
     }))
 
     if (isLastCard) {
-      try {
-        await endReviewSessionAPI(sessionId)
-      } catch {
-        // ignore
-      }
-      setDone(true)
+      setIsCompletingSession(true)
+      await finalizeSession()
     } else {
       setCurrentIndex((i) => i + 1)
       setFlipped(false)
@@ -178,6 +193,11 @@ export function ReviewSessionPage() {
       </div>
 
       <div className={styles.main}>
+        {completionError && (
+          <div style={{ marginBottom: 'var(--space-6)', color: 'var(--color-error)', fontWeight: 600 }}>
+            {completionError}
+          </div>
+        )}
         <div className={clsx(styles.cardArea, cardClass)}>
           <div
             className={clsx(styles.card, flipped && styles.cardFlipped)}
@@ -200,29 +220,37 @@ export function ReviewSessionPage() {
         </div>
 
         {showRating && (
-          <div className={styles.ratingArea}>
-            <button
-              type="button"
-              className={clsx(styles.ratingBtn, styles.ratingEasy)}
-              onClick={() => handleRating(RATING_EASY)}
-            >
-              EASY
-            </button>
-            <button
-              type="button"
-              className={clsx(styles.ratingBtn, styles.ratingGood)}
-              onClick={() => handleRating(RATING_GOOD)}
-            >
-              GOOD
-            </button>
-            <button
-              type="button"
-              className={clsx(styles.ratingBtn, styles.ratingHard)}
-              onClick={() => handleRating(RATING_HARD)}
-            >
-              HARD
-            </button>
-          </div>
+          isCompletingSession ? (
+            <div className={styles.ratingArea}>
+              <Button type="primary" className={styles.ratingBtn} onClick={finalizeSession}>
+                Retry Finish Session
+              </Button>
+            </div>
+          ) : (
+            <div className={styles.ratingArea}>
+              <button
+                type="button"
+                className={clsx(styles.ratingBtn, styles.ratingEasy)}
+                onClick={() => handleRating(RATING_EASY)}
+              >
+                EASY
+              </button>
+              <button
+                type="button"
+                className={clsx(styles.ratingBtn, styles.ratingGood)}
+                onClick={() => handleRating(RATING_GOOD)}
+              >
+                GOOD
+              </button>
+              <button
+                type="button"
+                className={clsx(styles.ratingBtn, styles.ratingHard)}
+                onClick={() => handleRating(RATING_HARD)}
+              >
+                HARD
+              </button>
+            </div>
+          )
         )}
       </div>
     </div>
