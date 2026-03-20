@@ -104,20 +104,24 @@
 
 .emptySubtext {
   font-size: var(--font-size-sm);
-  color: var(--color-text-disabled);
+  color: var(--color-text-muted);
+  margin-top: var(--space-2);
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .loadErrorBanner {
   display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
   margin-bottom: var(--space-6);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-5) var(--space-6);
   background: var(--color-bg-secondary);
   border: 2px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
 }
 
 .loadErrorText {
