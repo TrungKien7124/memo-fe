@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Spin, message, Popconfirm } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
@@ -18,31 +18,46 @@ export function FlashcardListPage() {
   const [folder, setFolder] = useState(null)
   const [flashcards, setFlashcards] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [folderMissing, setFolderMissing] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editingCard, setEditingCard] = useState(null)
   const [flippedIds, setFlippedIds] = useState(new Set())
 
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
+    setFolderMissing(false)
+    setFolder(null)
     try {
-      const [foldersData, cardsData] = await Promise.all([
+      const [folders, cards] = await Promise.all([
         getFoldersAPI(),
         getFlashcardsAPI(folderId),
       ])
-      const folders = Array.isArray(foldersData) ? foldersData : foldersData?.results || []
-      setFolder(folders.find((f) => String(f.id) === String(folderId)) || { id: folderId, name: 'Folder' })
-      setFlashcards(Array.isArray(cardsData) ? cardsData : cardsData?.results || [])
+      const match = folders.find((f) => String(f.id) === String(folderId))
+      if (!match) {
+        setFolderMissing(true)
+        setFlashcards([])
+        return
+      }
+      setFolder(match)
+      setFlashcards(cards)
     } catch (err) {
-      const msg = getApiErrorMessage(err, 'Failed to load')
+      const msg =
+        err instanceof Error && err.message && !err.response
+          ? err.message
+          : getApiErrorMessage(err, 'Failed to load')
+      setLoadError(msg)
       message.error(msg)
+      setFlashcards([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [folderId])
 
   useEffect(() => {
     loadData()
-  }, [folderId])
+  }, [loadData])
 
   function handleFlip(id) {
     setFlippedIds((prev) => {
@@ -67,7 +82,8 @@ export function FlashcardListPage() {
 
   function handleEdit(id, event) {
     event?.stopPropagation?.()
-    setEditingCard(flashcards.find((c) => c.id === id))
+    const card = flashcards.find((c) => String(c.id) === String(id))
+    setEditingCard(card ?? null)
     setFormOpen(true)
   }
 
@@ -88,6 +104,7 @@ export function FlashcardListPage() {
           icon={<PlusOutlined />}
           onClick={() => setFormOpen(true)}
           className={styles.addBtn}
+          disabled={!!loadError || folderMissing || !folder}
         >
           Add Card
         </Button>
@@ -96,6 +113,24 @@ export function FlashcardListPage() {
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
           <Spin size="large" />
+        </div>
+      ) : loadError ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyText}>Could not load this folder</p>
+          <p className={styles.emptySubtext}>{loadError}</p>
+          <Button type="primary" onClick={() => loadData()} className={styles.addBtn} style={{ marginTop: 16 }}>
+            Retry
+          </Button>
+        </div>
+      ) : folderMissing ? (
+        <div className={styles.empty}>
+          <p className={styles.emptyText}>Folder not found</p>
+          <p className={styles.emptySubtext}>
+            This folder does not exist or you do not have access.
+          </p>
+          <Button type="primary" onClick={() => navigate('/flashcards')} className={styles.addBtn} style={{ marginTop: 16 }}>
+            Back to folders
+          </Button>
         </div>
       ) : flashcards.length === 0 ? (
         <div className={styles.empty}>
@@ -146,16 +181,11 @@ export function FlashcardListPage() {
                       </button>
                     </Popconfirm>
                   </div>
-                  <span className={styles.frontText}>{card.front || 'No front text'}</span>
+                  <span className={styles.frontText}>{card.frontText || 'No front text'}</span>
                 </div>
                 <div className={clsx(styles.cardFace, styles.cardBack)}>
-                  <span className={styles.frontText}>{card.back || 'No back text'}</span>
-                  {card.ipa && <span className={styles.ipa}>{card.ipa}</span>}
-                  {card.example_sentence && (
-                    <span className={styles.backText} style={{ marginTop: 8 }}>
-                      {card.example_sentence}
-                    </span>
-                  )}
+                  <span className={styles.frontText}>{card.backText || 'No back text'}</span>
+                  {card.ipa ? <span className={styles.ipa}>{card.ipa}</span> : null}
                 </div>
               </div>
             </div>

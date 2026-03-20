@@ -1,7 +1,17 @@
 import { useEffect } from 'react'
-import { Modal, Form, Input, message } from 'antd'
-import { createFlashcardAPI, updateFlashcardAPI } from './flashcardService'
+import { Modal, Form, Input, Select, message } from 'antd'
+import {
+  createFlashcardAPI,
+  updateFlashcardAPI,
+  mapFlashcardFieldErrorsToForm,
+} from './flashcardService'
 import { applyFormApiError, parseApiError } from '../../utils/apiError'
+
+const CARD_TYPE_OPTIONS = [
+  { value: 'vocabulary', label: 'Vocabulary' },
+  { value: 'phrase', label: 'Phrase' },
+  { value: 'sentence', label: 'Sentence' },
+]
 
 export function FlashcardForm({ open, onClose, folderId, initialValues, onSuccess }) {
   const [form] = Form.useForm()
@@ -9,8 +19,17 @@ export function FlashcardForm({ open, onClose, folderId, initialValues, onSucces
   useEffect(() => {
     if (open) {
       form.resetFields()
-      if (initialValues) {
-        form.setFieldsValue(initialValues)
+      if (initialValues?.id) {
+        form.setFieldsValue({
+          frontText: initialValues.frontText,
+          backText: initialValues.backText,
+          ipa: initialValues.ipa ?? '',
+          audioUrl: initialValues.audioUrl ?? '',
+          imageUrl: initialValues.imageUrl ?? '',
+          cardType: initialValues.cardType ?? 'vocabulary',
+        })
+      } else {
+        form.setFieldsValue({ cardType: 'vocabulary' })
       }
     }
   }, [open, initialValues, form])
@@ -21,7 +40,7 @@ export function FlashcardForm({ open, onClose, folderId, initialValues, onSucces
         await updateFlashcardAPI(initialValues.id, values)
         message.success('Flashcard updated!')
       } else {
-        await createFlashcardAPI({ ...values, folder: folderId })
+        await createFlashcardAPI({ folderId, ...values })
         message.success('Flashcard created!')
       }
       onSuccess?.()
@@ -29,7 +48,11 @@ export function FlashcardForm({ open, onClose, folderId, initialValues, onSucces
       form.resetFields()
     } catch (err) {
       const parsedError = parseApiError(err, 'Operation failed')
-      applyFormApiError(form, parsedError)
+      const mapped = {
+        ...parsedError,
+        fieldErrors: mapFlashcardFieldErrorsToForm(parsedError.fieldErrors),
+      }
+      applyFormApiError(form, mapped)
       message.error(parsedError.message)
     }
   }
@@ -50,7 +73,7 @@ export function FlashcardForm({ open, onClose, folderId, initialValues, onSucces
         requiredMark={false}
       >
         <Form.Item
-          name="front"
+          name="frontText"
           label="Front"
           rules={[{ required: true, message: 'Front text is required' }]}
         >
@@ -58,7 +81,7 @@ export function FlashcardForm({ open, onClose, folderId, initialValues, onSucces
         </Form.Item>
 
         <Form.Item
-          name="back"
+          name="backText"
           label="Back"
           rules={[{ required: true, message: 'Back text is required' }]}
         >
@@ -69,8 +92,16 @@ export function FlashcardForm({ open, onClose, folderId, initialValues, onSucces
           <Input placeholder="e.g. /həˈloʊ/" />
         </Form.Item>
 
-        <Form.Item name="example_sentence" label="Example Sentence (optional)">
-          <Input.TextArea rows={2} placeholder="e.g. Hello, how are you?" />
+        <Form.Item name="audioUrl" label="Audio URL (optional)">
+          <Input placeholder="https://..." />
+        </Form.Item>
+
+        <Form.Item name="imageUrl" label="Image URL (optional)">
+          <Input placeholder="https://..." />
+        </Form.Item>
+
+        <Form.Item name="cardType" label="Card type">
+          <Select options={CARD_TYPE_OPTIONS} />
         </Form.Item>
 
         <Form.Item>

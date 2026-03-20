@@ -18,11 +18,14 @@ export function FoldersPage() {
   async function loadFolders() {
     setLoading(true)
     try {
-      const data = await getFoldersAPI()
-      setFolders(Array.isArray(data) ? data : data?.results || [])
+      const list = await getFoldersAPI()
+      setFolders(list)
     } catch (err) {
-      const msg = getApiErrorMessage(err, 'Failed to load folders')
+      const msg = err instanceof Error && err.message && !err.response
+        ? err.message
+        : getApiErrorMessage(err, 'Failed to load folders')
       message.error(msg)
+      setFolders([])
     } finally {
       setLoading(false)
     }
@@ -95,8 +98,8 @@ export function FoldersPage() {
                 {folder.name}
               </div>
               <div className={styles.cardMeta}>
-                {folder.card_count ?? folder.flashcard_count ?? 0} cards
-                {folder.created_at && ` · ${formatDate(folder.created_at)}`}
+                {folder.flashcardCount} cards
+                {folder.createdAt && ` · ${formatDate(folder.createdAt)}`}
               </div>
             </Link>
           ))}
