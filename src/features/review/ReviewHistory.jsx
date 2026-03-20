@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Spin, message } from 'antd'
 import { SyncOutlined } from '@ant-design/icons'
@@ -11,23 +11,27 @@ import styles from './ReviewHistory.module.css'
 export function ReviewHistory() {
   const [sessions, setSessions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
 
-  async function loadHistory() {
+  const loadHistory = useCallback(async () => {
     setLoading(true)
     try {
       const sessionsData = await getReviewHistoryAPI()
       setSessions(sessionsData)
+      setLoadError(null)
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Failed to load history')
       message.error(msg)
+      setLoadError(msg)
+      setSessions((previous) => (previous.length > 0 ? previous : []))
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadHistory()
-  }, [])
+  }, [loadHistory])
 
   return (
     <div className={styles.page}>
@@ -44,34 +48,57 @@ export function ReviewHistory() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
           <Spin size="large" />
         </div>
-      ) : sessions.length === 0 ? (
+      ) : loadError && sessions.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyIcon}>📊</div>
-          <p className={styles.emptyText}>No review sessions yet</p>
-          <Link to="/review">
-            <Button type="primary" style={{ marginTop: 16 }}>Start Your First Review</Button>
-          </Link>
+          <div className={styles.emptyIcon}>⚠️</div>
+          <p className={styles.emptyText}>Could not load review history</p>
+          <p className={styles.emptySubtext}>{loadError}</p>
+          <Button type="primary" onClick={loadHistory} style={{ marginTop: 16 }}>
+            Retry
+          </Button>
         </div>
       ) : (
-        <div className={styles.list}>
-          {sessions.map((session) => (
-            <div key={session.id} className={styles.card}>
-              <div>
-                <div className={styles.date}>
-                  {formatDateTime(session.createdAt || session.startedAt)}
-                </div>
-                <div className={styles.meta}>
-                  {typeof session.cardsReviewed === 'number' ? session.cardsReviewed : 'N/A'} cards reviewed
-                </div>
-              </div>
-              <div className={styles.right}>
-                <div className={styles.score}>
-                  {typeof session.xpEarned === 'number' ? `+${formatXP(session.xpEarned)} XP` : 'N/A XP'}
-                </div>
-              </div>
+        <>
+          {loadError ? (
+            <div className={styles.loadErrorBanner} role="alert">
+              <p className={styles.loadErrorText}>{loadError}</p>
+              <Button type="primary" onClick={loadHistory} className={styles.createBtn}>
+                Retry
+              </Button>
             </div>
-          ))}
-        </div>
+          ) : null}
+          {sessions.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon}>📊</div>
+              <p className={styles.emptyText}>No review sessions yet</p>
+              <Link to="/review">
+                <Button type="primary" style={{ marginTop: 16 }}>
+                  Start Your First Review
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className={styles.list}>
+              {sessions.map((session) => (
+                <div key={session.id} className={styles.card}>
+                  <div>
+                    <div className={styles.date}>
+                      {formatDateTime(session.createdAt || session.startedAt)}
+                    </div>
+                    <div className={styles.meta}>
+                      {typeof session.cardsReviewed === 'number' ? session.cardsReviewed : 'N/A'} cards reviewed
+                    </div>
+                  </div>
+                  <div className={styles.right}>
+                    <div className={styles.score}>
+                      {typeof session.xpEarned === 'number' ? `+${formatXP(session.xpEarned)} XP` : 'N/A XP'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
