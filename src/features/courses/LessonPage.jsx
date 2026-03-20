@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Alert, Card, Radio, Space, Spin, Typography } from 'antd'
+import { Alert, Button, Card, Input, Radio, Space, Spin, Typography } from 'antd'
 import { ArrowLeftOutlined, CloseOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import clsx from 'clsx'
 import { getLessonDetailAPI, markLessonProgressAPI, submitQuizAnswerAPI } from './courseService'
+import { postLessonChatAPI } from './lessonChatService'
+import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './LessonPage.module.css'
 
 const { Paragraph, Text } = Typography
@@ -34,11 +36,24 @@ export function LessonPage() {
     max_hearts: QUIZ_MAX_HEARTS,
   })
 
+  const [lessonChatInput, setLessonChatInput] = useState('')
+  const [lessonChatSending, setLessonChatSending] = useState(false)
+  const [lessonChatMessages, setLessonChatMessages] = useState([])
+  const [lessonChatConversationId, setLessonChatConversationId] = useState(null)
+  const [lessonChatContextStatus, setLessonChatContextStatus] = useState(null)
+  const [lessonChatSendError, setLessonChatSendError] = useState(null)
+
   useEffect(() => {
     async function fetchLesson() {
       if (!lessonId) return
       setLoading(true)
       setError(null)
+      setLessonChatInput('')
+      setLessonChatMessages([])
+      setLessonChatConversationId(null)
+      setLessonChatContextStatus(null)
+      setLessonChatSendError(null)
+      setLessonChatSending(false)
       try {
         const lessonData = await getLessonDetailAPI(lessonId)
         const questions = normalizeQuizQuestions(lessonData)
@@ -67,6 +82,46 @@ export function LessonPage() {
     }
     fetchLesson()
   }, [lessonId])
+
+  const handleLessonChatSend = useCallback(async () => {
+    const text = lessonChatInput.trim()
+    if (!text || !lesson)
+      return
+    if (lesson.lesson_type === 'quiz')
+      return
+
+    setLessonChatSending(true)
+    setLessonChatSendError(null)
+    try {
+      const dto = await postLessonChatAPI(
+        lesson.id,
+        text,
+        lessonChatConversationId || undefined,
+      )
+      setLessonChatConversationId(dto.conversationId)
+      setLessonChatContextStatus(dto.lessonContextStatus)
+
+      if (dto.lessonContextStatus === 'ready' && dto.aiMessage) {
+        setLessonChatMessages((previous) => [
+          ...previous,
+          { id: `user-${Date.now()}`, role: 'user', content: text },
+          {
+            id: dto.aiMessage.id,
+            role: 'assistant',
+            content: dto.aiMessage.content,
+            createdAt: dto.aiMessage.createdAt,
+          },
+        ])
+        setLessonChatInput('')
+      }
+    }
+    catch (err) {
+      setLessonChatSendError(getApiErrorMessage(err, 'Failed to send message'))
+    }
+    finally {
+      setLessonChatSending(false)
+    }
+  }, [lesson, lessonChatInput, lessonChatConversationId])
 
   function handleBack() {
     navigate(`/courses/${id}`)
@@ -223,6 +278,103 @@ export function LessonPage() {
     )
   }
 
+  function renderLessonChatPanel() {
+    if (!lesson)
+      return null
+
+    if (lesson.lesson_type === 'quiz') {
+      return (
+        <Card className={styles.lessonChatCard} title="Lesson Chat">
+          <Alert
+            type="info"
+            showIcon
+            message="Not available"
+            description="Lesson chat is not available for quiz lessons."
+          />
+        </Card>
+      )
+    }
+
+    const showPendingBanner = lessonChatContextStatus === 'index_pending'
+    const showFailedBanner = lessonChatContextStatus === 'index_failed'
+    const showUnsupportedBanner = lessonChatContextStatus === 'unsupported_lesson'
+
+    return (
+      <Card className={styles.lessonChatCard} title="Lesson Chat">
+        {showPendingBanner && (
+          <Alert
+            type="warning"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="Lesson context is still being indexed. Try again shortly."
+          />
+        )}
+        {showFailedBanner && (
+          <Alert
+            type="error"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="Lesson context is not ready because indexing failed or is unavailable in the current environment."
+          />
+        )}
+        {showUnsupportedBanner && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginBottom: 12 }}
+            message="This lesson type does not support lesson-grounded chat."
+          />
+        )}
+        {lessonChatSendError && (
+          <Alert
+            type="error"
+            showIcon
+            closable
+            onClose={() => setLessonChatSendError(null)}
+            style={{ marginBottom: 12 }}
+            message={lessonChatSendError}
+          />
+        )}
+        <div className={styles.lessonChatMessages}>
+          {lessonChatMessages.map((msg) => (
+            <div
+              key={msg.id}
+              className={clsx(
+                styles.lessonChatRow,
+                msg.role === 'user' ? styles.lessonChatRowUser : styles.lessonChatRowAssistant,
+              )}
+            >
+              <Text className={styles.lessonChatBubbleText}>{msg.content}</Text>
+            </div>
+          ))}
+        </div>
+        <div className={styles.lessonChatInputRow}>
+          <Input.TextArea
+            value={lessonChatInput}
+            onChange={(event) => setLessonChatInput(event.target.value)}
+            placeholder="Ask about this lesson..."
+            autoSize={{ minRows: 1, maxRows: 4 }}
+            disabled={lessonChatSending || showUnsupportedBanner}
+            onPressEnter={(event) => {
+              if (!event.shiftKey) {
+                event.preventDefault()
+                handleLessonChatSend()
+              }
+            }}
+          />
+          <Button
+            type="primary"
+            loading={lessonChatSending}
+            onClick={handleLessonChatSend}
+            disabled={!lessonChatInput.trim() || lessonChatSending || showUnsupportedBanner}
+          >
+            Send
+          </Button>
+        </div>
+      </Card>
+    )
+  }
+
   if (loading) {
     return (
       <div className={styles.page} style={{ justifyContent: 'center', alignItems: 'center' }}>
@@ -260,6 +412,7 @@ export function LessonPage() {
           />
         )}
         {renderLessonBody()}
+        {lesson && renderLessonChatPanel()}
         <h2 className={styles.lessonTitle}>{lesson?.title ?? 'Lesson'}</h2>
         {lesson?.lesson_type === 'quiz' && (
           <Text type="secondary" style={{ marginTop: 8 }}>

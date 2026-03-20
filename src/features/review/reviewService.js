@@ -26,8 +26,8 @@ function toReviewCardDTO(cardState) {
   return {
     id: cardState.card,
     cardStateId: cardState.id,
-    frontText: `Card ${String(cardState.card).slice(0, 8)}`,
-    backText: 'Review this card and rate your recall.',
+    frontText: String(cardState.card),
+    backText: null,
     dueDate: cardState.due_date,
     stage: cardState.stage,
     intervalDays: cardState.interval_days,
@@ -40,8 +40,8 @@ function toReviewSessionHistoryDTO(session) {
     createdAt: session.created_at,
     startedAt: session.started_at,
     endedAt: session.ended_at,
-    cardsReviewed: 0,
-    xpEarned: 0,
+    cardsReviewed: null,
+    xpEarned: null,
   }
 }
 

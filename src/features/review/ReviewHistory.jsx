@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { Button, Spin, message } from 'antd'
 import { SyncOutlined } from '@ant-design/icons'
 import { getReviewHistoryAPI } from './reviewService'
-import { formatDate, formatDateTime } from '../../utils/formatDate'
+import { formatDateTime } from '../../utils/formatDate'
 import { formatXP } from '../../utils/formatXP'
 import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './ReviewHistory.module.css'
@@ -61,12 +61,12 @@ export function ReviewHistory() {
                   {formatDateTime(session.createdAt || session.startedAt)}
                 </div>
                 <div className={styles.meta}>
-                  {session.cardsReviewed} cards reviewed
+                  {session.cardsReviewed == null ? 'N/A' : session.cardsReviewed} cards reviewed
                 </div>
               </div>
               <div className={styles.right}>
                 <div className={styles.score}>
-                  +{formatXP(session.xpEarned)} XP
+                  {session.xpEarned == null ? 'N/A XP' : `+${formatXP(session.xpEarned)} XP`}
                 </div>
               </div>
             </div>
