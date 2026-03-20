@@ -122,7 +122,11 @@ export function DashboardPage() {
         </div>
       </div>
       <aside className={styles.stickyWrapper}>
-        <DailyGoalWidget currentXP={totalXp} targetXP={goal} isUnavailable={!xpSummary || goal == null} />
+        <DailyGoalWidget
+          currentXP={xpSummary?.todayXp ?? null}
+          targetXP={goal}
+          isUnavailable={!xpSummary || goal == null}
+        />
         <StreakWidget streak={streak} lastSevenDays={lastSeven} isUnavailable={!xpSummary || streak == null} />
         <RecentActivity activities={[]} isUnavailable />
       </aside>
