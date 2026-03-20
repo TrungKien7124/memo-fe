@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Button, Modal, Form, Input, Spin, message } from 'antd'
 import { PlusOutlined, FolderOutlined } from '@ant-design/icons'
@@ -11,12 +11,14 @@ import styles from './FoldersPage.module.css'
 export function FoldersPage() {
   const [folders, setFolders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [form] = Form.useForm()
 
-  async function loadFolders() {
+  const loadFolders = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
       const list = await getFoldersAPI()
       setFolders(list)
@@ -24,16 +26,16 @@ export function FoldersPage() {
       const msg = err instanceof Error && err.message && !err.response
         ? err.message
         : getApiErrorMessage(err, 'Failed to load folders')
+      setLoadError(msg)
       message.error(msg)
-      setFolders([])
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     loadFolders()
-  }, [])
+  }, [loadFolders])
 
   async function handleCreate(values) {
     setSubmitting(true)
@@ -70,40 +72,60 @@ export function FoldersPage() {
         <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
           <Spin size="large" />
         </div>
-      ) : folders.length === 0 ? (
+      ) : loadError && folders.length === 0 ? (
         <div className={styles.empty}>
-          <div className={styles.emptyIcon}>📁</div>
-          <p className={styles.emptyText}>No folders yet</p>
-          <p className={styles.emptySubtext}>Create a folder to organize your flashcards</p>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModalOpen(true)}
-            className={clsx(styles.createBtn, styles.createBtn)}
-            style={{ marginTop: 16 }}
-          >
-            Create Your First Folder
+          <p className={styles.emptyText}>Could not load folders</p>
+          <p className={styles.emptySubtext}>{loadError}</p>
+          <Button type="primary" onClick={() => loadFolders()} className={styles.createBtn} style={{ marginTop: 16 }}>
+            Retry
           </Button>
         </div>
       ) : (
-        <div className={styles.grid}>
-          {folders.map((folder) => (
-            <Link
-              key={folder.id}
-              to={`/flashcards/${folder.id}`}
-              className={styles.card}
-            >
-              <div className={styles.cardName}>
-                <FolderOutlined style={{ marginRight: 8 }} />
-                {folder.name}
-              </div>
-              <div className={styles.cardMeta}>
-                {folder.flashcardCount} cards
-                {folder.createdAt && ` · ${formatDate(folder.createdAt)}`}
-              </div>
-            </Link>
-          ))}
-        </div>
+        <>
+          {loadError && folders.length > 0 ? (
+            <div className={styles.loadErrorBanner} role="alert">
+              <p className={styles.loadErrorText}>{loadError}</p>
+              <Button type="primary" size="small" onClick={() => loadFolders()}>
+                Retry
+              </Button>
+            </div>
+          ) : null}
+          {folders.length === 0 ? (
+            <div className={styles.empty}>
+              <div className={styles.emptyIcon}>📁</div>
+              <p className={styles.emptyText}>No folders yet</p>
+              <p className={styles.emptySubtext}>Create a folder to organize your flashcards</p>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => setModalOpen(true)}
+                className={clsx(styles.createBtn, styles.createBtn)}
+                style={{ marginTop: 16 }}
+              >
+                Create Your First Folder
+              </Button>
+            </div>
+          ) : (
+            <div className={styles.grid}>
+              {folders.map((folder) => (
+                <Link
+                  key={folder.id}
+                  to={`/flashcards/${folder.id}`}
+                  className={styles.card}
+                >
+                  <div className={styles.cardName}>
+                    <FolderOutlined style={{ marginRight: 8 }} />
+                    {folder.name}
+                  </div>
+                  <div className={styles.cardMeta}>
+                    {folder.flashcardCount} cards
+                    {folder.createdAt && ` · ${formatDate(folder.createdAt)}`}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <Modal

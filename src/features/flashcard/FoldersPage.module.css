@@ -106,3 +106,24 @@
   font-size: var(--font-size-sm);
   color: var(--color-text-disabled);
 }
+
+.loadErrorBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.loadErrorText {
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
