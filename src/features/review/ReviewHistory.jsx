@@ -61,12 +61,12 @@ export function ReviewHistory() {
                   {formatDateTime(session.createdAt || session.startedAt)}
                 </div>
                 <div className={styles.meta}>
-                  {session.cardsReviewed == null ? 'N/A' : session.cardsReviewed} cards reviewed
+                  {typeof session.cardsReviewed === 'number' ? session.cardsReviewed : 'N/A'} cards reviewed
                 </div>
               </div>
               <div className={styles.right}>
                 <div className={styles.score}>
-                  {session.xpEarned == null ? 'N/A XP' : `+${formatXP(session.xpEarned)} XP`}
+                  {typeof session.xpEarned === 'number' ? `+${formatXP(session.xpEarned)} XP` : 'N/A XP'}
                 </div>
               </div>
             </div>

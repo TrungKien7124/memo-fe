@@ -16,8 +16,6 @@ const RATING_EASY = 'easy'
 const RATING_GOOD = 'good'
 const RATING_HARD = 'hard'
 
-const XP_PER_RATING = { easy: 15, good: 10, hard: 5 }
-
 export function ReviewSessionPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -29,7 +27,7 @@ export function ReviewSessionPage() {
   const [done, setDone] = useState(false)
   const [completionError, setCompletionError] = useState(null)
   const [isCompletingSession, setIsCompletingSession] = useState(false)
-  const [result, setResult] = useState({ xp: 0, reviewed: 0, correct: 0 })
+  const [completion, setCompletion] = useState(null)
 
   const startSession = useCallback(async () => {
     setLoading(true)
@@ -44,6 +42,7 @@ export function ReviewSessionPage() {
       setDone(false)
       setCompletionError(null)
       setIsCompletingSession(false)
+      setCompletion(null)
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Failed to start review')
       message.error(msg)
@@ -65,8 +64,9 @@ export function ReviewSessionPage() {
     if (!sessionId) return
 
     try {
-      await endReviewSessionAPI(sessionId)
+      const sessionSummary = await endReviewSessionAPI(sessionId)
       setCompletionError(null)
+      setCompletion(sessionSummary)
       setDone(true)
     } catch (err) {
       setCompletionError(getApiErrorMessage(err, 'Review completion could not be confirmed'))
@@ -90,13 +90,6 @@ export function ReviewSessionPage() {
       message.error(getApiErrorMessage(err, 'Failed to submit'))
       return
     }
-
-    const xp = XP_PER_RATING[rating] ?? 10
-    setResult((prev) => ({
-      xp: prev.xp + xp,
-      reviewed: prev.reviewed + 1,
-      correct: prev.correct + (rating === RATING_EASY || rating === RATING_GOOD ? 1 : 0),
-    }))
 
     if (isLastCard) {
       setIsCompletingSession(true)
@@ -138,7 +131,8 @@ export function ReviewSessionPage() {
   }
 
   if (done) {
-    const accuracy = result.reviewed > 0 ? Math.round((result.correct / result.reviewed) * 100) : 0
+    const cardsReviewed = completion?.cardsReviewed ?? 0
+    const xpEarned = completion?.xpEarned ?? 0
     return (
       <div className={styles.page}>
         <div className={styles.header}>
@@ -150,14 +144,14 @@ export function ReviewSessionPage() {
           <div className={styles.resultScreen}>
             <h1 className={styles.resultTitle}>Review Complete! 🎉</h1>
             <p className={styles.resultSubtitle}>Great job!</p>
-            <div className={styles.xpEarned}>+{result.xp} XP</div>
+            <div className={styles.xpEarned}>+{xpEarned} XP</div>
             <div className={styles.stats}>
               <div className={styles.stat}>
-                <div className={styles.statValue}>{result.reviewed}</div>
+                <div className={styles.statValue}>{cardsReviewed}</div>
                 <div className={styles.statLabel}>Cards reviewed</div>
               </div>
               <div className={styles.stat}>
-                <div className={styles.statValue}>{accuracy}%</div>
+                <div className={styles.statValue}>N/A</div>
                 <div className={styles.statLabel}>Accuracy</div>
               </div>
             </div>
