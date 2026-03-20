@@ -61,6 +61,13 @@
   border-radius: var(--radius-xl);
 }
 
+.loadErrorEmpty {
+  text-align: center;
+  padding: var(--space-16);
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-xl);
+}
+
 .emptyIcon {
   font-size: 48px;
   margin-bottom: var(--space-4);

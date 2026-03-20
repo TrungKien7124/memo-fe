@@ -49,7 +49,7 @@ export function ReviewHistory() {
           <Spin size="large" />
         </div>
       ) : loadError && sessions.length === 0 ? (
-        <div className={styles.empty}>
+        <div className={styles.loadErrorEmpty}>
           <div className={styles.emptyIcon}>⚠️</div>
           <p className={styles.emptyText}>Could not load review history</p>
           <p className={styles.emptySubtext}>{loadError}</p>
