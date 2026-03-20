@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Alert, Button, Card, Input, Radio, Space, Spin, Typography } from 'antd'
 import { ArrowLeftOutlined, CloseOutlined, PlayCircleOutlined } from '@ant-design/icons'
@@ -42,10 +42,14 @@ export function LessonPage() {
   const [lessonChatConversationId, setLessonChatConversationId] = useState(null)
   const [lessonChatContextStatus, setLessonChatContextStatus] = useState(null)
   const [lessonChatSendError, setLessonChatSendError] = useState(null)
+  const activeLessonIdRef = useRef(lessonId)
+  const lessonChatRequestSeqRef = useRef(0)
+  const lessonChatMessagesContainerRef = useRef(null)
 
   useEffect(() => {
     async function fetchLesson() {
       if (!lessonId) return
+      activeLessonIdRef.current = lessonId
       setLoading(true)
       setError(null)
       setLessonChatInput('')
@@ -83,6 +87,14 @@ export function LessonPage() {
     fetchLesson()
   }, [lessonId])
 
+  useEffect(() => {
+    const el = lessonChatMessagesContainerRef.current
+    if (!el) return
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+    if (distanceFromBottom < 80)
+      el.scrollTop = el.scrollHeight
+  }, [lessonChatMessages.length])
+
   const handleLessonChatSend = useCallback(async () => {
     const text = lessonChatInput.trim()
     if (!text || !lesson)
@@ -90,6 +102,8 @@ export function LessonPage() {
     if (lesson.lesson_type === 'quiz')
       return
 
+    const sendLessonId = String(lesson.id)
+    const requestSeq = ++lessonChatRequestSeqRef.current
     setLessonChatSending(true)
     setLessonChatSendError(null)
     try {
@@ -98,6 +112,8 @@ export function LessonPage() {
         text,
         lessonChatConversationId || undefined,
       )
+      if (activeLessonIdRef.current !== sendLessonId) return
+      if (requestSeq !== lessonChatRequestSeqRef.current) return
       setLessonChatConversationId(dto.conversationId)
       setLessonChatContextStatus(dto.lessonContextStatus)
 
@@ -116,10 +132,13 @@ export function LessonPage() {
       }
     }
     catch (err) {
+      if (activeLessonIdRef.current !== sendLessonId) return
+      if (requestSeq !== lessonChatRequestSeqRef.current) return
       setLessonChatSendError(getApiErrorMessage(err, 'Failed to send message'))
     }
     finally {
-      setLessonChatSending(false)
+      if (activeLessonIdRef.current === sendLessonId && requestSeq === lessonChatRequestSeqRef.current)
+        setLessonChatSending(false)
     }
   }, [lesson, lessonChatInput, lessonChatConversationId])
 
@@ -335,7 +354,7 @@ export function LessonPage() {
             message={lessonChatSendError}
           />
         )}
-        <div className={styles.lessonChatMessages}>
+        <div className={styles.lessonChatMessages} ref={lessonChatMessagesContainerRef}>
           {lessonChatMessages.map((msg) => (
             <div
               key={msg.id}
