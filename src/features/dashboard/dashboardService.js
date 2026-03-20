@@ -20,12 +20,13 @@ export async function getXPSummaryAPI() {
   const { data } = await axiosClient.get('/api/gms/xp/')
   const responseData = parseDetailDataEnvelope(data, 'xp summary')
   return {
-    total_xp: responseData.total_xp ?? null,
-    weekly_xp: responseData.weekly_xp ?? null,
-    monthly_xp: responseData.monthly_xp ?? null,
-    daily_goal: responseData.daily_goal ?? null,
+    totalXp: responseData.total_xp ?? null,
+    weeklyXp: responseData.weekly_xp ?? null,
+    monthlyXp: responseData.monthly_xp ?? null,
+    dailyGoal: responseData.daily_goal ?? null,
+    todayXp: responseData.today_xp ?? null,
     streak: responseData.streak ?? null,
-    last_seven_days: responseData.last_seven_days ?? [],
+    lastSevenDays: responseData.last_seven_days ?? [],
   }
 }
 

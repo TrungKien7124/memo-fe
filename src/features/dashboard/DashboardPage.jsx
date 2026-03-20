@@ -73,10 +73,10 @@ export function DashboardPage() {
     )
   }
 
-  const totalXp = xpSummary?.total_xp ?? null
-  const goal = xpSummary?.daily_goal ?? null
+  const totalXp = xpSummary?.totalXp ?? null
+  const goal = xpSummary?.dailyGoal ?? null
   const streak = xpSummary?.streak ?? null
-  const lastSeven = xpSummary?.last_seven_days ?? []
+  const lastSeven = xpSummary?.lastSevenDays ?? []
 
   return (
     <div className={styles.page}>

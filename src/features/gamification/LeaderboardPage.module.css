@@ -145,3 +145,28 @@
   color: var(--color-text-secondary);
   margin-top: var(--space-2);
 }
+
+.loadErrorBanner {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  background: var(--color-bg-secondary);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.loadErrorText {
+  margin: 0;
+  flex: 1;
+  min-width: 200px;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.retryBtn {
+  height: 40px;
+}

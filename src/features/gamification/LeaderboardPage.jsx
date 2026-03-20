@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
-import { Spin, message } from 'antd'
+import { Button, Spin, message } from 'antd'
 import clsx from 'clsx'
 import { getLeaderboardAPI, getProfileStatsAPI } from './gamificationService'
 import { formatXP } from '../../utils/formatXP'
@@ -22,19 +22,24 @@ export function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState([])
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
 
   async function loadData() {
     setLoading(true)
+    setLoadError(null)
     try {
       const [boardData, statsData] = await Promise.all([
         getLeaderboardAPI(),
         getProfileStatsAPI(),
       ])
-      setLeaderboard(Array.isArray(boardData) ? boardData : boardData?.results || [])
+      setLeaderboard(boardData)
       setStats(statsData)
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Failed to load leaderboard')
+      setLoadError(msg)
       message.error(msg)
+      setLeaderboard([])
+      setStats(null)
     } finally {
       setLoading(false)
     }
@@ -52,9 +57,24 @@ export function LeaderboardPage() {
     )
   }
 
-  const userStats = stats || {}
-  const totalXP = userStats.total_xp ?? userStats.xp ?? 0
-  const streak = userStats.streak ?? userStats.current_streak ?? 0
+  if (loadError) {
+    return (
+      <div className={styles.page}>
+        <div style={{ gridColumn: '1 / -1' }}>
+          <div className={styles.loadErrorBanner} role="alert">
+            <p className={styles.loadErrorText}>{loadError}</p>
+            <Button type="primary" onClick={loadData} className={styles.retryBtn}>
+              Retry
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const userStats = stats
+  const totalXP = userStats?.totalXp ?? null
+  const streak = userStats?.streak ?? null
 
   return (
     <div className={styles.page}>
@@ -62,13 +82,14 @@ export function LeaderboardPage() {
         <h1 className={styles.title}>Leaderboard</h1>
         {leaderboard.map((entry, index) => {
           const rank = index + 1
-          const user = entry.user ?? entry
-          const name = user.display_name ?? user.name ?? user.email ?? 'Anonymous'
-          const xp = entry.xp ?? entry.total_xp ?? 0
-          const isCurrentUser = currentUser && (user.id === currentUser.id || user.email === currentUser.email)
+          const name = entry.username ?? entry.email ?? 'Anonymous'
+          const xp = entry.xp ?? entry.totalXp ?? 0
+          const isCurrentUser =
+            currentUser &&
+            (String(entry.id) === String(currentUser.id) || (entry.email && entry.email === currentUser.email))
           return (
             <div
-              key={user.id ?? index}
+              key={entry.id ?? index}
               className={clsx(styles.row, isCurrentUser && styles.rowCurrent)}
             >
               <span className={clsx(styles.rank, rank === 1 && styles.rank1, rank === 2 && styles.rank2, rank === 3 && styles.rank3)}>
@@ -93,11 +114,15 @@ export function LeaderboardPage() {
           <div className={styles.userStats}>
             <div className={styles.statRow}>
               <span className={styles.statLabel}>Total XP</span>
-              <span className={clsx(styles.statValue, styles.xpValue)}>{formatXP(totalXP)}</span>
+              <span className={clsx(styles.statValue, styles.xpValue)}>
+                {totalXP == null ? 'XP unavailable' : formatXP(totalXP)}
+              </span>
             </div>
             <div className={styles.statRow}>
               <span className={styles.statLabel}>Streak</span>
-              <span className={styles.statValue}>{streak} days</span>
+              <span className={styles.statValue}>
+                {streak == null ? 'Streak unavailable' : `${streak} days`}
+              </span>
             </div>
           </div>
         </div>
