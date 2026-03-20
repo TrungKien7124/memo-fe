@@ -23,9 +23,9 @@ export async function getXPSummaryAPI() {
     total_xp: responseData.total_xp ?? null,
     weekly_xp: responseData.weekly_xp ?? null,
     monthly_xp: responseData.monthly_xp ?? null,
-    daily_goal: null,
-    streak: null,
-    last_seven_days: [],
+    daily_goal: responseData.daily_goal ?? null,
+    streak: responseData.streak ?? null,
+    last_seven_days: responseData.last_seven_days ?? [],
   }
 }
 
