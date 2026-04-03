@@ -22,8 +22,8 @@
 
 .circle {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 132px;
+  height: 132px;
 }
 
 .svg {
@@ -44,6 +44,19 @@
   transition: stroke-dashoffset 0.5s ease;
 }
 
+.progressCirclePending {
+  stroke: var(--color-text-disabled);
+}
+
+.centerContent {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .label {
   font-size: var(--font-size-sm);
   font-weight: 600;
@@ -52,6 +65,12 @@
 
 .xpText {
   font-size: var(--font-size-xl);
-  font-weight: 800;
+  font-weight: 900;
+  line-height: 1;
   color: var(--color-xp);
+  text-align: center;
+}
+
+.xpTextPending {
+  color: var(--color-text-disabled);
 }

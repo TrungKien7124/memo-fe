@@ -77,17 +77,18 @@ function mapReviewSessionDetailDTO(session) {
   }
 }
 
-export async function createReviewSessionAPI() {
-  const { data } = await axiosClient.post('/api/rse/review-sessions/')
+export async function createReviewSessionAPI({ folderId } = {}) {
+  const body = folderId ? { folder: folderId } : {}
+  const { data } = await axiosClient.post('/api/rse/review-sessions/', body)
   const row = parseDetailDataEnvelope(data, 'review session create')
   return mapReviewSessionDetailDTO(row)
 }
 
-export async function getDueCardsAPI() {
-  const today = new Date().toISOString().split('T')[0]
-  const { data } = await axiosClient.get('/api/srs/card-srs/', {
-    params: { due_date__lte: today },
-  })
+export async function getDueCardsAPI({ folderId } = {}) {
+  const params = {}
+  if (folderId) params.folder = folderId
+
+  const { data } = await axiosClient.get('/api/srs/card-srs/', { params })
 
   const rows = parseListDataEnvelope(data, 'due cards list')
   return rows.map(mapDueCardDTO)

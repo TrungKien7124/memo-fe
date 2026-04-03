@@ -59,6 +59,13 @@
   text-align: right;
 }
 
+.scopeSubtitle {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text-disabled);
+  margin-top: var(--space-2);
+}
+
 .main {
   flex: 1;
   display: flex;
@@ -87,31 +94,13 @@
   border-radius: var(--radius-xl);
   padding: var(--space-10);
   cursor: pointer;
-  transition: transform 0.5s;
-  transform-style: preserve-3d;
+  transition: border-color var(--transition-fast);
   position: relative;
 }
 
-.cardInner {
+.cardBody {
   width: 100%;
-  height: 100%;
-  transition: transform 0.5s;
-  transform-style: preserve-3d;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.cardFlipped .cardInner {
-  transform: rotateY(180deg);
-}
-
-.cardFace {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
+  min-height: 240px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -119,15 +108,22 @@
   padding: var(--space-8);
 }
 
-.cardBack {
-  transform: rotateY(180deg);
-}
-
 .cardText {
   font-size: var(--font-size-2xl);
   font-weight: 700;
   color: var(--color-text-primary);
   text-align: center;
+}
+
+.cardImage {
+  width: 100%;
+  max-width: 320px;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  margin-top: var(--space-6);
+  border: 2px solid var(--color-border);
+  background: var(--color-bg-secondary);
 }
 
 .hint {

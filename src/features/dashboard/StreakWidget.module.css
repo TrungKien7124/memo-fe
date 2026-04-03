@@ -42,7 +42,7 @@
   width: 28px;
   height: 28px;
   border-radius: var(--radius-full);
-  background: var(--color-border);
+  background: var(--color-primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,7 +52,7 @@
 }
 
 .dayCircleActive {
-  background: var(--color-success);
+  background: var(--color-warning);
   color: white;
 }
 

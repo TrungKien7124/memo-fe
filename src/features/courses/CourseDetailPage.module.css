@@ -50,11 +50,11 @@
 }
 
 .lessonButton {
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   border-radius: var(--radius-full);
   border: 2px solid var(--color-border);
-  border-bottom-width: 8px;
+  border-bottom-width: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -94,7 +94,7 @@
   width: 2px;
   background: var(--color-border);
   min-height: 24px;
-  margin-left: 27px;
+  margin-left: 31px;
 }
 
 .connectorAlt {

@@ -52,6 +52,27 @@
   border-bottom-width: 2px !important;
 }
 
+.reviewBtn {
+  height: 40px;
+  padding: 0 var(--space-4);
+  font-weight: 600;
+  background: var(--color-bg) !important;
+  border: 2px solid var(--color-primary) !important;
+  border-bottom: 4px solid var(--color-primary-hover) !important;
+  border-radius: var(--radius-md) !important;
+  color: var(--color-primary) !important;
+  transition: transform var(--transition-fast), border-bottom-width var(--transition-fast);
+}
+
+.reviewBtn:hover {
+  transform: translateY(-2px);
+}
+
+.reviewBtn:active {
+  border-bottom-width: 2px !important;
+  transform: translateY(2px);
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -64,7 +85,7 @@
   border-bottom: 4px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-5);
-  cursor: pointer;
+  cursor: default;
   transition: transform var(--transition-fast), border-color var(--transition-fast);
   min-height: 120px;
   position: relative;

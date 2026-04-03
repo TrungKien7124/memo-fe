@@ -73,21 +73,40 @@
   flex: 1;
   padding: var(--space-6);
   display: flex;
+  justify-content: center;
+}
+
+.contentLayout {
+  width: 100%;
+  max-width: 1240px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--space-6);
+  align-items: start;
+  justify-content: space-between;
+}
+
+.lessonMain {
+  min-width: 0;
+  display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  overflow-y: auto;
+  align-items: flex-start;
+}
+
+.lessonSidebar {
+  position: sticky;
+  top: var(--space-6);
 }
 
 .lessonChatCard {
   width: 100%;
-  max-width: 900px;
-  margin-top: var(--space-6);
+  max-width: 340px;
+  margin-top: 0;
 }
 
 .lessonChatMessages {
-  min-height: 120px;
-  max-height: 320px;
+  min-height: 90px;
+  max-height: 220px;
   overflow-y: auto;
   margin-bottom: var(--space-4);
   display: flex;
@@ -114,6 +133,20 @@
   border-radius: var(--radius-lg);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+@media (max-width: 1024px) {
+  .contentLayout {
+    grid-template-columns: 1fr;
+  }
+
+  .lessonSidebar {
+    position: static;
+  }
+
+  .lessonChatCard {
+    max-width: 900px;
+  }
 }
 
 .lessonChatRowUser .lessonChatBubbleText {

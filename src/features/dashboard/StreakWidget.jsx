@@ -10,6 +10,7 @@ export function StreakWidget({ streak = null, lastSevenDays = [], isUnavailable 
     : Array.from({ length: 7 }, (_, i) => {
         return !isUnavailable && safeStreak > 0 && i < safeStreak
       })
+  const hasAnyStreak = !isUnavailable && safeStreak > 0
 
   return (
     <div className={styles.widget}>
@@ -27,7 +28,7 @@ export function StreakWidget({ streak = null, lastSevenDays = [], isUnavailable 
             className={clsx(
               styles.dayCircle,
               filledDays[i] && styles.dayCircleActive,
-              i === 6 && styles.dayCircleToday
+              i === 6 && hasAnyStreak && styles.dayCircleToday
             )}
           >
             {label}

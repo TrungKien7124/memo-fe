@@ -181,6 +181,10 @@ export function LessonPage() {
         setQuizRuntime(nextRuntime)
         const isCompleted = Boolean(updatedProgress?.completed)
         setCompleted(isCompleted)
+        if (isCompleted) {
+          navigate(`/courses/${id}`)
+          return
+        }
         if (nextRuntime.total_questions > 0) {
           const percentage = Math.round((nextRuntime.correct_count / nextRuntime.total_questions) * 100)
           setProgress(isCompleted ? 100 : percentage)
@@ -196,6 +200,10 @@ export function LessonPage() {
         const isCompleted = Boolean(updatedProgress?.completed)
         setCompleted(isCompleted)
         setProgress(isCompleted ? 100 : 0)
+        if (isCompleted) {
+          navigate(`/courses/${id}`)
+          return
+        }
         return
       }
 
@@ -204,6 +212,10 @@ export function LessonPage() {
       const isCompleted = Boolean(updatedProgress?.completed)
       setCompleted(isCompleted)
       setProgress(isCompleted ? 100 : progress)
+      if (isCompleted) {
+        navigate(`/courses/${id}`)
+        return
+      }
     } catch (err) {
       setError(err?.message || 'Failed to save lesson progress.')
     } finally {
@@ -422,22 +434,30 @@ export function LessonPage() {
       </header>
 
       <main className={styles.content}>
-        {error && lesson && (
-          <Alert
-            type="error"
-            showIcon
-            message={error}
-            style={{ width: '100%', maxWidth: 900, marginBottom: 16 }}
-          />
-        )}
-        {renderLessonBody()}
-        {lesson && renderLessonChatPanel()}
-        <h2 className={styles.lessonTitle}>{lesson?.title ?? 'Lesson'}</h2>
-        {lesson?.lesson_type === 'quiz' && (
-          <Text type="secondary" style={{ marginTop: 8 }}>
-            Answer each question one-by-one. You have 5 hearts for wrong answers.
-          </Text>
-        )}
+        <div className={styles.contentLayout}>
+          <section className={styles.lessonMain}>
+            {error && lesson && (
+              <Alert
+                type="error"
+                showIcon
+                message={error}
+                style={{ width: '100%', maxWidth: 900, marginBottom: 16 }}
+              />
+            )}
+            {renderLessonBody()}
+            <h2 className={styles.lessonTitle}>{lesson?.title ?? 'Lesson'}</h2>
+            {lesson?.lesson_type === 'quiz' && (
+              <Text type="secondary" style={{ marginTop: 8 }}>
+                Answer each question one-by-one. You have 5 hearts for wrong answers.
+              </Text>
+            )}
+          </section>
+          {lesson && (
+            <aside className={styles.lessonSidebar}>
+              {renderLessonChatPanel()}
+            </aside>
+          )}
+        </div>
       </main>
 
       <footer

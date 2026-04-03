@@ -5,7 +5,6 @@ import { TrophyOutlined, SyncOutlined } from '@ant-design/icons'
 import clsx from 'clsx'
 import { DailyGoalWidget } from './DailyGoalWidget'
 import { StreakWidget } from './StreakWidget'
-import { RecentActivity } from './RecentActivity'
 import { getXPSummaryAPI, getDueCardsAPI } from './dashboardService'
 import { getCoursesAPI } from '../courses/courseService'
 import styles from './DashboardPage.module.css'
@@ -128,7 +127,6 @@ export function DashboardPage() {
           isUnavailable={!xpSummary || goal == null}
         />
         <StreakWidget streak={streak} lastSevenDays={lastSeven} isUnavailable={!xpSummary || streak == null} />
-        <RecentActivity activities={[]} isUnavailable />
       </aside>
     </div>
   )

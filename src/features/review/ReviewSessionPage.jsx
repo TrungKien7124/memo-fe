@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button, Spin, message } from 'antd'
 import { CloseOutlined } from '@ant-design/icons'
 import clsx from 'clsx'
@@ -13,11 +13,11 @@ import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './ReviewSessionPage.module.css'
 
 const RATING_EASY = 'easy'
-const RATING_GOOD = 'good'
 const RATING_HARD = 'hard'
 
 export function ReviewSessionPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [loading, setLoading] = useState(true)
   const [sessionId, setSessionId] = useState(null)
   const [cards, setCards] = useState([])
@@ -29,12 +29,16 @@ export function ReviewSessionPage() {
   const [isCompletingSession, setIsCompletingSession] = useState(false)
   const [completion, setCompletion] = useState(null)
 
+  const folderId = new URLSearchParams(location.search).get('folderId')
+  const scopeLabel = folderId ? 'Folder-scoped' : 'Global'
+  const completionSubtitle = folderId ? 'Folder review complete!' : 'Great job!'
+
   const startSession = useCallback(async () => {
     setLoading(true)
     try {
-      const session = await createReviewSessionAPI()
+      const session = await createReviewSessionAPI({ folderId })
       setSessionId(session.id)
-      const cardList = await getDueCardsAPI()
+      const cardList = await getDueCardsAPI({ folderId })
       setCards(cardList)
       setCurrentIndex(0)
       setFlipped(false)
@@ -50,7 +54,7 @@ export function ReviewSessionPage() {
     } finally {
       setLoading(false)
     }
-  }, [navigate])
+  }, [navigate, folderId])
 
   useEffect(() => {
     startSession()
@@ -119,8 +123,14 @@ export function ReviewSessionPage() {
         </div>
         <div className={styles.main}>
           <div className={styles.noCards}>
-            <h2 className={styles.noCardsTitle}>No cards to review!</h2>
-            <p className={styles.noCardsText}>Come back later or add more flashcards.</p>
+            <h2 className={styles.noCardsTitle}>
+              {folderId ? 'No cards to review in this folder!' : 'No cards to review!'}
+            </h2>
+            <p className={styles.noCardsText}>
+              {folderId
+                ? 'Come back later or add more flashcards to this folder.'
+                : 'Come back later or add more flashcards.'}
+            </p>
             <Button type="primary" onClick={() => navigate('/flashcards')} className={styles.ratingBtn}>
               Go to Flashcards
             </Button>
@@ -143,7 +153,7 @@ export function ReviewSessionPage() {
         <div className={styles.main}>
           <div className={styles.resultScreen}>
             <h1 className={styles.resultTitle}>Review Complete! 🎉</h1>
-            <p className={styles.resultSubtitle}>Great job!</p>
+            <p className={styles.resultSubtitle}>{completionSubtitle}</p>
             <div className={styles.xpEarned}>+{xpEarned} XP</div>
             <div className={styles.stats}>
               <div className={styles.stat}>
@@ -183,6 +193,7 @@ export function ReviewSessionPage() {
         </div>
         <div className={styles.counter}>
           {currentIndex + 1} / {cards.length}
+          <div className={styles.scopeSubtitle}>{scopeLabel}</div>
         </div>
       </div>
 
@@ -194,21 +205,22 @@ export function ReviewSessionPage() {
         )}
         <div className={clsx(styles.cardArea, cardClass)}>
           <div
-            className={clsx(styles.card, flipped && styles.cardFlipped)}
+            className={styles.card}
             onClick={() => !showRating && setFlipped(true)}
           >
-            <div className={styles.cardInner}>
-              <div className={styles.cardFace}>
-                <span className={styles.cardText}>
-                  {currentCard?.frontText || 'No front'}
-                </span>
-                <span className={styles.hint}>Tap to flip</span>
-              </div>
-              <div className={clsx(styles.cardFace, styles.cardBack)}>
-                <span className={styles.cardText}>
-                  {currentCard?.backText || 'No back'}
-                </span>
-              </div>
+            <div className={styles.cardBody}>
+              <span className={styles.cardText}>
+                {flipped ? (currentCard?.backText || 'No back') : (currentCard?.frontText || 'No front')}
+              </span>
+              {flipped && currentCard?.imageUrl && (
+                <img
+                  src={currentCard.imageUrl}
+                  alt="Flashcard visual"
+                  className={styles.cardImage}
+                  loading="lazy"
+                />
+              )}
+              {!flipped && <span className={styles.hint}>Tap to flip</span>}
             </div>
           </div>
         </div>
@@ -228,13 +240,6 @@ export function ReviewSessionPage() {
                 onClick={() => handleRating(RATING_EASY)}
               >
                 EASY
-              </button>
-              <button
-                type="button"
-                className={clsx(styles.ratingBtn, styles.ratingGood)}
-                onClick={() => handleRating(RATING_GOOD)}
-              >
-                GOOD
               </button>
               <button
                 type="button"

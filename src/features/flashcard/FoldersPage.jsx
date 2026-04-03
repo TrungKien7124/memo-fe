@@ -108,20 +108,26 @@ export function FoldersPage() {
           ) : null}
           <div className={styles.grid}>
             {folders.map((folder) => (
-              <Link
-                key={folder.id}
-                to={`/flashcards/${folder.id}`}
-                className={styles.card}
-              >
-                <div className={styles.cardName}>
-                  <FolderOutlined style={{ marginRight: 8 }} />
-                  {folder.name}
-                </div>
-                <div className={styles.cardMeta}>
-                  {folder.flashcardCount} cards
-                  {folder.createdAt && ` · ${formatDate(folder.createdAt)}`}
-                </div>
-              </Link>
+                  <div key={folder.id} className={styles.card}>
+                    <Link to={`/flashcards/${folder.id}`} className={styles.cardMainLink}>
+                      <div className={styles.cardName}>
+                        <FolderOutlined style={{ marginRight: 8 }} />
+                        {folder.name}
+                      </div>
+                      <div className={styles.cardMeta}>
+                        {folder.flashcardCount} cards
+                        {folder.createdAt && ` · ${formatDate(folder.createdAt)}`}
+                      </div>
+                    </Link>
+                    <div className={styles.cardActions}>
+                      <Link
+                        to={`/review?folderId=${folder.id}`}
+                        className={clsx(styles.reviewLink, styles.actionBtn)}
+                      >
+                        Review
+                      </Link>
+                    </div>
+                  </div>
             ))}
           </div>
         </>

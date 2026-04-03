@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button, Spin, message, Popconfirm } from 'antd'
 import { ArrowLeftOutlined, PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
-import clsx from 'clsx'
 import {
   getFoldersAPI,
   getFlashcardsAPI,
@@ -22,7 +21,6 @@ export function FlashcardListPage() {
   const [folderMissing, setFolderMissing] = useState(false)
   const [formOpen, setFormOpen] = useState(false)
   const [editingCard, setEditingCard] = useState(null)
-  const [flippedIds, setFlippedIds] = useState(new Set())
 
   const loadData = useCallback(async () => {
     setLoading(true)
@@ -59,15 +57,6 @@ export function FlashcardListPage() {
     loadData()
   }, [loadData])
 
-  function handleFlip(id) {
-    setFlippedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
   async function handleDelete(id, event) {
     event?.stopPropagation?.()
     try {
@@ -99,6 +88,14 @@ export function FlashcardListPage() {
           <ArrowLeftOutlined />
         </button>
         <h1 className={styles.title}>{folder?.name || 'Flashcards'}</h1>
+        <Button
+          type="default"
+          onClick={() => navigate(`/review?folderId=${folderId}`)}
+          className={styles.reviewBtn}
+          disabled={!!loadError || folderMissing || !folder}
+        >
+          Review Folder
+        </Button>
         <Button
           type="primary"
           icon={<PlusOutlined />}
@@ -151,8 +148,7 @@ export function FlashcardListPage() {
           {flashcards.map((card) => (
             <div
               key={card.id}
-              className={clsx(styles.card, flippedIds.has(card.id) && styles.cardFlipped)}
-              onClick={() => handleFlip(card.id)}
+              className={styles.card}
             >
               <div className={styles.cardInner}>
                 <div className={styles.cardFace}>
@@ -182,10 +178,6 @@ export function FlashcardListPage() {
                     </Popconfirm>
                   </div>
                   <span className={styles.frontText}>{card.frontText || 'No front text'}</span>
-                </div>
-                <div className={clsx(styles.cardFace, styles.cardBack)}>
-                  <span className={styles.frontText}>{card.backText || 'No back text'}</span>
-                  {card.ipa ? <span className={styles.ipa}>{card.ipa}</span> : null}
                 </div>
               </div>
             </div>

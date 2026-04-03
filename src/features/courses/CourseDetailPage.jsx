@@ -107,9 +107,9 @@ export function CourseDetailPage() {
             {(mod.lessons || []).map((lesson, idx) => (
               <div key={lesson.id}>
                 {idx > 0 && (
-                  <div className={clsx(styles.connector, idx % 2 === 1 && styles.connectorAlt)} />
+                  <div className={styles.connector} />
                 )}
-                <div className={clsx(styles.lessonRow, idx % 2 === 1 && styles.lessonRowAlt)}>
+                <div className={styles.lessonRow}>
                   <button
                     type="button"
                     className={clsx(
@@ -122,6 +122,11 @@ export function CourseDetailPage() {
                   >
                     <LessonIcon status={lesson.status} />
                   </button>
+                  <div>
+                    <p>
+                      {lesson.title}
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
