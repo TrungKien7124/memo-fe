@@ -1,25 +1,10 @@
 import axiosClient from '../../services/axiosClient'
+import { assertSuccessEnvelope, parseListPayload } from '../../utils/apiEnvelope'
 
 const RATING_TO_CHOICE_MAP = {
   easy: 'EASY',
   good: 'GOOD',
   hard: 'HARD',
-}
-
-function parseDetailDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data))
-    throw new Error(`Missing data object in ${endpoint} response`)
-  return payload.data
-}
-
-function parseListDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!Array.isArray(payload.data))
-    throw new Error(`Missing data list in ${endpoint} response`)
-  return payload.data
 }
 
 function requireField(value, fieldPath) {
@@ -79,8 +64,8 @@ function mapReviewSessionDetailDTO(session) {
 
 export async function createReviewSessionAPI({ folderId } = {}) {
   const body = folderId ? { folder: folderId } : {}
-  const { data } = await axiosClient.post('/api/rse/review-sessions/', body)
-  const row = parseDetailDataEnvelope(data, 'review session create')
+  const { data } = await axiosClient.post('/api/review-sessions/', body)
+  const row = assertSuccessEnvelope(data, 'review session create')
   return mapReviewSessionDetailDTO(row)
 }
 
@@ -88,9 +73,9 @@ export async function getDueCardsAPI({ folderId } = {}) {
   const params = {}
   if (folderId) params.folder = folderId
 
-  const { data } = await axiosClient.get('/api/srs/card-srs/', { params })
+  const { data } = await axiosClient.get('/api/card-repetition-states/', { params })
 
-  const rows = parseListDataEnvelope(data, 'due cards list')
+  const rows = parseListPayload(data, 'due cards list')
   return rows.map(mapDueCardDTO)
 }
 
@@ -98,14 +83,13 @@ export async function submitCardReviewAPI({ sessionId, cardId, rating }) {
   const choice = RATING_TO_CHOICE_MAP[rating]
   if (!choice) throw new Error('Unsupported review rating value')
 
-  const { data } = await axiosClient.post('/api/rse/card-review-logs/', {
+  const { data } = await axiosClient.post('/api/card-review-logs/', {
     session: sessionId,
     card: cardId,
     choice,
   })
 
-  // Not used by current UI, but keep submit responses normalized.
-  const row = parseDetailDataEnvelope(data, 'card review create')
+  const row = assertSuccessEnvelope(data, 'card review create')
   return {
     id: row.id,
     cardId: row.card,
@@ -115,14 +99,14 @@ export async function submitCardReviewAPI({ sessionId, cardId, rating }) {
 }
 
 export async function endReviewSessionAPI(id) {
-  const { data } = await axiosClient.patch(`/api/rse/review-sessions/${id}/`, {})
+  const { data } = await axiosClient.patch(`/api/review-sessions/${id}/`, {})
 
-  const row = parseDetailDataEnvelope(data, 'review session end')
+  const row = assertSuccessEnvelope(data, 'review session end')
   return mapReviewSessionHistoryDTO(row)
 }
 
 export async function getReviewHistoryAPI() {
-  const { data } = await axiosClient.get('/api/rse/review-sessions/')
-  const rows = parseListDataEnvelope(data, 'review history list')
+  const { data } = await axiosClient.get('/api/review-sessions/')
+  const rows = parseListPayload(data, 'review history list')
   return rows.map(mapReviewSessionHistoryDTO)
 }

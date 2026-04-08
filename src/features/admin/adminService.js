@@ -1,75 +1,76 @@
 import axiosClient from '../../services/axiosClient'
+import { assertSuccessEnvelope, parseListPayload } from '../../utils/apiEnvelope'
 
 export async function getAdminCoursesAPI() {
-  const { data } = await axiosClient.get('/api/cms/courses/')
-  return data
+  const { data } = await axiosClient.get('/api/courses/')
+  return parseListPayload(data, 'admin courses list')
 }
 
 export async function createAdminCourseAPI(payload) {
-  const { data } = await axiosClient.post('/api/cms/courses/', payload)
-  return data
+  const { data } = await axiosClient.post('/api/courses/', payload)
+  return assertSuccessEnvelope(data, 'admin course create')
 }
 
 export async function getAdminCourseByIdAPI(courseId) {
-  const { data } = await axiosClient.get(`/api/cms/courses/${courseId}/`)
-  return data
+  const { data } = await axiosClient.get(`/api/courses/${courseId}/`)
+  return assertSuccessEnvelope(data, 'admin course detail')
 }
 
 export async function updateAdminCourseAPI(courseId, payload) {
-  const { data } = await axiosClient.patch(`/api/cms/courses/${courseId}/`, payload)
-  return data
+  const { data } = await axiosClient.patch(`/api/courses/${courseId}/`, payload)
+  return assertSuccessEnvelope(data, 'admin course update')
 }
 
 export async function deleteAdminCourseAPI(courseId) {
-  const { data } = await axiosClient.delete(`/api/cms/courses/${courseId}/`)
-  return data
+  const { data } = await axiosClient.delete(`/api/courses/${courseId}/`)
+  return assertSuccessEnvelope(data, 'admin course delete')
 }
 
 export async function getAdminModulesAPI(courseId) {
-  const { data } = await axiosClient.get('/api/cms/modules/', {
+  const { data } = await axiosClient.get('/api/modules/', {
     params: courseId ? { course: courseId } : {},
   })
-  return data
+  return parseListPayload(data, 'admin modules list')
 }
 
 export async function createAdminModuleAPI(payload) {
-  const { data } = await axiosClient.post('/api/cms/modules/', payload)
-  return data
+  const { data } = await axiosClient.post('/api/modules/', payload)
+  return assertSuccessEnvelope(data, 'admin module create')
 }
 
 export async function getAdminModuleByIdAPI(moduleId) {
-  const { data } = await axiosClient.get(`/api/cms/modules/${moduleId}/`)
-  return data
+  const { data } = await axiosClient.get(`/api/modules/${moduleId}/`)
+  return assertSuccessEnvelope(data, 'admin module detail')
 }
 
 export async function updateAdminModuleAPI(moduleId, payload) {
-  const { data } = await axiosClient.patch(`/api/cms/modules/${moduleId}/`, payload)
-  return data
+  const { data } = await axiosClient.patch(`/api/modules/${moduleId}/`, payload)
+  return assertSuccessEnvelope(data, 'admin module update')
 }
 
 export async function deleteAdminModuleAPI(moduleId) {
-  const { data } = await axiosClient.delete(`/api/cms/modules/${moduleId}/`)
-  return data
+  const { data } = await axiosClient.delete(`/api/modules/${moduleId}/`)
+  return assertSuccessEnvelope(data, 'admin module delete')
 }
 
 export async function getAdminLessonsAPI(moduleId) {
-  const { data } = await axiosClient.get('/api/cms/lessons/', {
+  const { data } = await axiosClient.get('/api/lessons/', {
     params: moduleId ? { module: moduleId } : {},
   })
-  return data
+  return parseListPayload(data, 'admin lessons list')
 }
 
 export async function createAdminLessonAPI(payload) {
-  const { data } = await axiosClient.post('/api/cms/lessons/', payload)
-  return data
+  const { data } = await axiosClient.post('/api/lessons/', payload)
+  return assertSuccessEnvelope(data, 'admin lesson create')
 }
 
 export async function updateAdminLessonAPI(lessonId, payload) {
-  const { data } = await axiosClient.patch(`/api/cms/lessons/${lessonId}/`, payload)
-  return data
+  const { data } = await axiosClient.patch(`/api/lessons/${lessonId}/`, payload)
+  return assertSuccessEnvelope(data, 'admin lesson update')
 }
 
 export async function deleteAdminLessonAPI(lessonId) {
-  const { data } = await axiosClient.delete(`/api/cms/lessons/${lessonId}/`)
-  return data
+  const { data } = await axiosClient.delete(`/api/lessons/${lessonId}/`)
+  return assertSuccessEnvelope(data, 'admin lesson delete')
 }

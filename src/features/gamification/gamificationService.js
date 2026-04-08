@@ -1,20 +1,5 @@
 import axiosClient from '../../services/axiosClient'
-
-function parseDetailDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data))
-    throw new Error(`Missing data object in ${endpoint} response`)
-  return payload.data
-}
-
-function parseListDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!Array.isArray(payload.data))
-    throw new Error(`Missing data list in ${endpoint} response`)
-  return payload.data
-}
+import { assertSuccessEnvelope, parseListPayload } from '../../utils/apiEnvelope'
 
 function toLeaderboardEntryDTO(entry) {
   if (!entry || typeof entry !== 'object' || Array.isArray(entry))
@@ -30,8 +15,8 @@ function toLeaderboardEntryDTO(entry) {
 }
 
 export async function getLeaderboardAPI() {
-  const { data } = await axiosClient.get('/api/gms/leaderboard/')
-  const rows = parseListDataEnvelope(data, 'leaderboard list')
+  const { data } = await axiosClient.get('/api/leaderboard/')
+  const rows = parseListPayload(data, 'leaderboard list')
   return rows.map((row) => {
     const dto = toLeaderboardEntryDTO(row)
     return {
@@ -43,8 +28,8 @@ export async function getLeaderboardAPI() {
 }
 
 export async function getProfileStatsAPI() {
-  const { data } = await axiosClient.get('/api/gms/xp/')
-  const responseData = parseDetailDataEnvelope(data, 'profile stats')
+  const { data } = await axiosClient.get('/api/xp/')
+  const responseData = assertSuccessEnvelope(data, 'profile stats')
   return {
     totalXp: responseData.total_xp ?? null,
     weeklyXp: responseData.weekly_xp ?? null,

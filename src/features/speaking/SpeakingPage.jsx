@@ -46,7 +46,8 @@ export function SpeakingPage() {
     setLoading(true)
     try {
       const session = await createSpeakingSessionAPI({ topic: topic.id, title: topic.title })
-      const sessionId = session?.id ?? session
+      const sessionId = session?.session_id ?? session?.id
+      if (!sessionId) throw new Error('Missing session_id in response')
       navigate(`/speaking/${sessionId}`, { state: { topic: topic.title } })
     } catch (err) {
       const msg = getApiErrorMessage(err, 'Failed to create session')

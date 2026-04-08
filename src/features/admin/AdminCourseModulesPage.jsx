@@ -49,7 +49,7 @@ export function AdminCourseModulesPage() {
         getAdminCourseByIdAPI(courseId),
         getAdminModulesAPI(courseId),
       ])
-      setCourse(courseData?.data || courseData)
+      setCourse(courseData)
       setModules(normalizeListResponse(modulesData))
     } catch (error) {
       const parsed = parseApiError(error, 'Failed to load modules')

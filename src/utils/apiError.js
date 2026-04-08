@@ -4,23 +4,43 @@ function normalizeFieldErrors(rawErrors) {
 
   const normalized = {}
   for (const [field, value] of Object.entries(rawErrors)) {
-    if (Array.isArray(value)) {
-      normalized[field] = value.map((item) => String(item))
-      continue
-    }
-
     if (value == null) {
       normalized[field] = []
       continue
     }
-
+    if (Array.isArray(value)) {
+      normalized[field] = value.map((item) => String(item))
+      continue
+    }
     normalized[field] = [String(value)]
   }
   return normalized
 }
 
+function parseWrappedErrorBody(responseData, fallbackMessage) {
+  if (!responseData || typeof responseData !== 'object')
+    return { message: fallbackMessage, oldData: {}, fieldErrors: {} }
+
+  const message = responseData.message || fallbackMessage
+  const code = responseData.code
+  const status = responseData.status
+  const data = responseData.data
+
+  if (code === 603 && data && typeof data === 'object' && !Array.isArray(data)) {
+    const oldData = data.old_data && typeof data.old_data === 'object' ? data.old_data : {}
+    const fieldErrors = normalizeFieldErrors(data.errors)
+    return { message, oldData, fieldErrors, code, status }
+  }
+
+  return { message, oldData: {}, fieldErrors: {}, code, status }
+}
+
 export function parseApiError(error, fallbackMessage = 'Operation failed') {
   const responseData = error?.response?.data
+
+  if (responseData && typeof responseData === 'object' && 'status' in responseData && 'code' in responseData)
+    return parseWrappedErrorBody(responseData, fallbackMessage)
+
   const detail = responseData?.detail
   const message = responseData?.message || detail || fallbackMessage
   const oldData = responseData?.old_data && typeof responseData.old_data === 'object'
@@ -54,6 +74,6 @@ export function applyFormApiError(form, parsedApiError) {
     fieldEntries.map(([name, errors]) => ({
       name,
       errors: errors || [],
-    }))
+    })),
   )
 }

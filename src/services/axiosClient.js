@@ -25,11 +25,21 @@ function processQueue(error, token = null) {
   failedQueue = []
 }
 
+function isUnauthorizedError(error) {
+  const status = error.response?.status
+  if (status === 401)
+    return true
+  const body = error.response?.data
+  if (body && typeof body === 'object' && body.code === 601)
+    return true
+  return false
+}
+
 axiosClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (isUnauthorizedError(error) && !originalRequest._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject })
@@ -46,9 +56,11 @@ axiosClient.interceptors.response.use(
         const refresh = localStorage.getItem('refresh_token')
         if (!refresh) throw new Error('No refresh token')
 
-        const { data } = await axios.post(`${API_URL}/api/auth/refresh/`, { refresh })
-        const accessToken = data.data?.access
-        const refreshToken = data.data?.refresh
+        const { data: body } = await axios.post(`${API_URL}/api/auth/refresh/`, { refresh })
+        if (body?.status !== 'success' || body?.code !== 200 || !body?.data)
+          throw new Error('Invalid refresh response format')
+        const accessToken = body.data.access
+        const refreshToken = body.data.refresh
         if (!accessToken) throw new Error('Invalid refresh response format')
         localStorage.setItem('access_token', accessToken)
         if (refreshToken) localStorage.setItem('refresh_token', refreshToken)
@@ -67,7 +79,7 @@ axiosClient.interceptors.response.use(
       }
     }
     return Promise.reject(error)
-  }
+  },
 )
 
 export default axiosClient

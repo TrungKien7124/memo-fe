@@ -1,20 +1,5 @@
 import axiosClient from '../../services/axiosClient'
-
-function parseListDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!Array.isArray(payload.data))
-    throw new Error(`Missing data list in ${endpoint} response`)
-  return payload.data
-}
-
-function parseDetailDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data))
-    throw new Error(`Missing data object in ${endpoint} response`)
-  return payload.data
-}
+import { assertSuccessEnvelope, parseListPayload } from '../../utils/apiEnvelope'
 
 function mapFolderFromApi(row) {
   if (!row || typeof row !== 'object')
@@ -83,32 +68,32 @@ function buildFlashcardWritePayload(input) {
 }
 
 export async function getFoldersAPI() {
-  const { data } = await axiosClient.get('/api/nfs/folders/')
-  const rows = parseListDataEnvelope(data, 'folders list')
+  const { data } = await axiosClient.get('/api/folders/')
+  const rows = parseListPayload(data, 'folders list')
   return rows.map(mapFolderFromApi)
 }
 
 export async function createFolderAPI({ name }) {
-  const { data } = await axiosClient.post('/api/nfs/folders/', { name })
-  const row = parseDetailDataEnvelope(data, 'folder create')
+  const { data } = await axiosClient.post('/api/folders/', { name })
+  const row = assertSuccessEnvelope(data, 'folder create')
   return mapFolderFromApi(row)
 }
 
 export async function updateFolderAPI(id, { name }) {
-  const { data } = await axiosClient.patch(`/api/nfs/folders/${id}/`, { name })
-  const row = parseDetailDataEnvelope(data, 'folder update')
+  const { data } = await axiosClient.patch(`/api/folders/${id}/`, { name })
+  const row = assertSuccessEnvelope(data, 'folder update')
   return mapFolderFromApi(row)
 }
 
 export async function deleteFolderAPI(id) {
-  await axiosClient.delete(`/api/nfs/folders/${id}/`)
+  await axiosClient.delete(`/api/folders/${id}/`)
 }
 
 export async function getFlashcardsAPI(folderId) {
-  const { data } = await axiosClient.get('/api/nfs/flashcards/', {
+  const { data } = await axiosClient.get('/api/flashcards/', {
     params: { folder: folderId },
   })
-  const rows = parseListDataEnvelope(data, 'flashcards list')
+  const rows = parseListPayload(data, 'flashcards list')
   return rows.map(mapFlashcardFromApi)
 }
 
@@ -125,8 +110,8 @@ export async function createFlashcardAPI(input) {
     imageUrl: input.imageUrl ?? '',
     cardType: input.cardType ?? 'vocabulary',
   })
-  const { data } = await axiosClient.post('/api/nfs/flashcards/', body)
-  const row = parseDetailDataEnvelope(data, 'flashcard create')
+  const { data } = await axiosClient.post('/api/flashcards/', body)
+  const row = assertSuccessEnvelope(data, 'flashcard create')
   return mapFlashcardFromApi(row)
 }
 
@@ -143,11 +128,11 @@ export async function updateFlashcardAPI(id, input) {
   if (!keys.length)
     throw new Error('No flashcard fields to update')
 
-  const { data } = await axiosClient.patch(`/api/nfs/flashcards/${id}/`, body)
-  const row = parseDetailDataEnvelope(data, 'flashcard update')
+  const { data } = await axiosClient.patch(`/api/flashcards/${id}/`, body)
+  const row = assertSuccessEnvelope(data, 'flashcard update')
   return mapFlashcardFromApi(row)
 }
 
 export async function deleteFlashcardAPI(id) {
-  await axiosClient.delete(`/api/nfs/flashcards/${id}/`)
+  await axiosClient.delete(`/api/flashcards/${id}/`)
 }

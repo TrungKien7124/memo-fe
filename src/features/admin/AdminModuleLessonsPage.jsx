@@ -139,7 +139,7 @@ export function AdminModuleLessonsPage() {
         getAdminModuleByIdAPI(moduleId),
         getAdminLessonsAPI(moduleId),
       ])
-      setModule(moduleData?.data || moduleData)
+      setModule(moduleData)
       setLessons(normalizeListResponse(lessonsData))
     } catch (error) {
       const parsed = parseApiError(error, 'Failed to load lessons')

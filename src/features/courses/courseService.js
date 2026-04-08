@@ -1,23 +1,8 @@
 import axiosClient from '../../services/axiosClient'
-
-function parseDetailDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data))
-    throw new Error(`Missing data object in ${endpoint} response`)
-  return payload.data
-}
-
-function parseListDataEnvelope(payload, endpoint) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpoint} response payload`)
-  if (!Array.isArray(payload.data))
-    throw new Error(`Missing data list in ${endpoint} response`)
-  return payload.data
-}
+import { assertSuccessEnvelope, parseListPayload } from '../../utils/apiEnvelope'
 
 function parseLessonProgressResponse(payload, endpoint) {
-  const progressData = parseDetailDataEnvelope(payload, endpoint)
+  const progressData = assertSuccessEnvelope(payload, endpoint)
   const quizRuntime = progressData.quiz_runtime && typeof progressData.quiz_runtime === 'object'
     ? progressData.quiz_runtime
     : null
@@ -29,36 +14,36 @@ function parseLessonProgressResponse(payload, endpoint) {
 }
 
 export async function getCoursesAPI() {
-  const { data } = await axiosClient.get('/api/cms/courses/')
-  return parseListDataEnvelope(data, 'courses list')
+  const { data } = await axiosClient.get('/api/courses/')
+  return parseListPayload(data, 'courses list')
 }
 
 export async function getCourseDetailAPI(id) {
-  const { data } = await axiosClient.get(`/api/cms/courses/${id}/`)
-  return parseDetailDataEnvelope(data, 'course detail')
+  const { data } = await axiosClient.get(`/api/courses/${id}/`)
+  return assertSuccessEnvelope(data, 'course detail')
 }
 
 export async function getModulesAPI(courseId) {
-  const { data } = await axiosClient.get('/api/cms/modules/', {
+  const { data } = await axiosClient.get('/api/modules/', {
     params: { course: courseId },
   })
-  return parseListDataEnvelope(data, 'modules list')
+  return parseListPayload(data, 'modules list')
 }
 
 export async function getLessonsAPI(moduleId) {
-  const { data } = await axiosClient.get('/api/cms/lessons/', {
+  const { data } = await axiosClient.get('/api/lessons/', {
     params: { module: moduleId },
   })
-  return parseListDataEnvelope(data, 'lessons list')
+  return parseListPayload(data, 'lessons list')
 }
 
 export async function getLessonDetailAPI(id) {
-  const { data } = await axiosClient.get(`/api/cms/lessons/${id}/`)
-  return parseDetailDataEnvelope(data, 'lesson detail')
+  const { data } = await axiosClient.get(`/api/lessons/${id}/`)
+  return assertSuccessEnvelope(data, 'lesson detail')
 }
 
 export async function markLessonProgressAPI(lessonId, payload) {
-  const { data } = await axiosClient.post('/api/lms/lesson-progress/', {
+  const { data } = await axiosClient.post('/api/lesson-progress/', {
     lesson: lessonId,
     ...payload,
   })
@@ -66,7 +51,7 @@ export async function markLessonProgressAPI(lessonId, payload) {
 }
 
 export async function submitQuizAnswerAPI(lessonId, payload) {
-  const { data } = await axiosClient.post('/api/lms/lesson-progress/', {
+  const { data } = await axiosClient.post('/api/lesson-progress/', {
     lesson: lessonId,
     ...payload,
   })

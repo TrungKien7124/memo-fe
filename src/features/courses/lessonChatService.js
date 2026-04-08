@@ -1,12 +1,5 @@
 import axiosClient from '../../services/axiosClient'
-
-function parseLessonChatEnvelope(payload, endpointLabel) {
-  if (!payload || typeof payload !== 'object' || Array.isArray(payload))
-    throw new Error(`Invalid ${endpointLabel} response payload`)
-  if (!payload.data || typeof payload.data !== 'object' || Array.isArray(payload.data))
-    throw new Error(`Missing data object in ${endpointLabel} response`)
-  return payload.data
-}
+import { assertSuccessEnvelope } from '../../utils/apiEnvelope'
 
 /**
  * Normalized lesson-chat DTO (camelCase). Page code must not read raw transport keys.
@@ -65,7 +58,7 @@ export function normalizeLessonChatResponseData(rawData) {
 }
 
 /**
- * POST /api/acs/chat/ in lesson-aware mode.
+ * POST /api/chat/ in lesson-aware mode.
  *
  * @param {string} lessonId
  * @param {string} messageText
@@ -80,7 +73,7 @@ export async function postLessonChatAPI(lessonId, messageText, conversationId) {
   if (conversationId)
     body.conversation_id = conversationId
 
-  const { data } = await axiosClient.post('/api/acs/chat/', body)
-  const envelopeData = parseLessonChatEnvelope(data, 'lesson chat')
+  const { data } = await axiosClient.post('/api/chat/', body)
+  const envelopeData = assertSuccessEnvelope(data, 'lesson chat')
   return normalizeLessonChatResponseData(envelopeData)
 }
