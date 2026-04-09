@@ -1,0 +1,27 @@
+.page {
+  min-height: calc(100vh - 120px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+.card {
+  width: 100%;
+  max-width: 640px;
+}
+
+.title {
+  margin-bottom: var(--space-3);
+}
+
+.description {
+  color: var(--color-text-secondary);
+}
+
+.courseDescription {
+  background: var(--color-bg-secondary);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+}

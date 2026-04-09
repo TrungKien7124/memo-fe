@@ -47,7 +47,7 @@ export function CoursesPage() {
           <div
             key={course.id}
             className={styles.card}
-            onClick={() => navigate(`/courses/${course.id}`)}
+            onClick={() => navigate(course.isEnrolled ? `/courses/${course.id}` : `/courses/${course.id}/checkout`)}
           >
             <div className={styles.imagePlaceholder}>📚</div>
             <h2 className={styles.cardTitle}>{course.title}</h2>
@@ -55,7 +55,7 @@ export function CoursesPage() {
               {course.description || 'Start learning today.'}
             </p>
             <p className={styles.cardMeta}>
-              {course.lesson_count ?? 0} lessons
+              {course.lessonCount ?? 0} lessons
             </p>
           </div>
         ))}

@@ -15,6 +15,7 @@ import {
   Table,
   Tag,
   Typography,
+  Upload,
   message,
 } from 'antd'
 import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
@@ -30,7 +31,7 @@ import { applyFormApiError, parseApiError } from '../../utils/apiError'
 import styles from './AdminCoursesPage.module.css'
 
 const { Title, Text } = Typography
-const LESSON_TYPES = ['video', 'text', 'quiz']
+const LESSON_TYPES = ['lesson', 'quiz']
 
 function normalizeListResponse(data) {
   if (Array.isArray(data))
@@ -57,27 +58,18 @@ function normalizeQuizQuestion(item) {
 }
 
 function normalizeLessonPayload(values) {
-  const lessonType = values.lesson_type || 'video'
+  const lessonType = values.lesson_type || 'lesson'
   const quizQuestions = Array.isArray(values.quiz_questions)
     ? values.quiz_questions.map(normalizeQuizQuestion)
     : []
 
-  if (lessonType === 'video') {
+  if (lessonType === 'lesson') {
+    const fileList = Array.isArray(values.video_file) ? values.video_file : []
+    const firstFile = fileList[0]?.originFileObj || null
     return {
       ...values,
-      lesson_type: 'video',
-      content_markdown: '',
-      quiz_questions: [],
-      is_final: false,
-    }
-  }
-
-  if (lessonType === 'text') {
-    return {
-      ...values,
-      lesson_type: 'text',
-      video_url: '',
-      min_watch_time: 0,
+      lesson_type: 'lesson',
+      video_file: firstFile,
       quiz_questions: [],
       is_final: false,
     }
@@ -87,6 +79,7 @@ function normalizeLessonPayload(values) {
     ...values,
     lesson_type: 'quiz',
     video_url: '',
+    video_file: null,
     content_markdown: '',
     min_watch_time: 0,
     quiz_questions: quizQuestions,
@@ -94,16 +87,16 @@ function normalizeLessonPayload(values) {
 }
 
 function lessonTypeLabel(lessonType) {
-  if (lessonType === 'text')
-    return 'Text'
+  if (lessonType === 'lesson')
+    return 'Lesson'
   if (lessonType === 'quiz')
     return 'Quiz'
-  return 'Video'
+  return 'Lesson'
 }
 
 function lessonTypeColor(lessonType) {
-  if (lessonType === 'text')
-    return 'purple'
+  if (lessonType === 'lesson')
+    return 'blue'
   if (lessonType === 'quiz')
     return 'orange'
   return 'blue'
@@ -160,7 +153,7 @@ export function AdminModuleLessonsPage() {
       message.success('Lesson created successfully')
       createForm.resetFields()
       createForm.setFieldsValue({
-        lesson_type: 'video',
+        lesson_type: 'lesson',
         min_watch_time: 120,
         order_index: 0,
         is_final: false,
@@ -178,8 +171,9 @@ export function AdminModuleLessonsPage() {
     setEditingLesson(lesson)
     editForm.setFieldsValue({
       title: lesson.title,
-      lesson_type: lesson.lesson_type || 'video',
+      lesson_type: lesson.lesson_type || 'lesson',
       video_url: lesson.video_url,
+      video_file: [],
       content_markdown: lesson.content_markdown,
       quiz_questions: Array.isArray(lesson.quiz_questions)
         ? lesson.quiz_questions.map(normalizeQuizQuestion)
@@ -252,7 +246,7 @@ export function AdminModuleLessonsPage() {
           type="info"
           showIcon
           message="Lesson Types"
-          description="Video: URL + watch time. Text: markdown content. Quiz: multiple-choice questions with one correct answer."
+          description="Lesson: video URL + summary + watch time. Quiz: multiple-choice questions with one correct answer."
           style={{ marginBottom: 16 }}
         />
         <Form form={createForm} layout="vertical" onFinish={handleCreateLesson} requiredMark={false}>
@@ -260,29 +254,34 @@ export function AdminModuleLessonsPage() {
             <Input placeholder="Lesson 1: Hello and Goodbye" />
           </Form.Item>
 
-          <Form.Item name="lesson_type" label="Lesson Type" initialValue="video">
+          <Form.Item name="lesson_type" label="Lesson Type" initialValue="lesson">
             <Select options={lessonTypeOptions} />
           </Form.Item>
 
-          {createLessonType === 'video' && (
+          {createLessonType === 'lesson' && (
             <>
-              <Form.Item name="video_url" label="Video URL" rules={[{ required: true, message: 'Please enter a video URL' }]}>
+              <Form.Item name="video_url" label="Video URL (optional if uploading file)">
                 <Input placeholder="https://youtube.com/..." />
+              </Form.Item>
+              <Form.Item
+                name="video_file"
+                label="Video File Upload"
+                valuePropName="fileList"
+                getValueFromEvent={(event) => (Array.isArray(event) ? event : event?.fileList)}
+              >
+                <Upload beforeUpload={() => false} maxCount={1}>
+                  <Button>Select Video File</Button>
+                </Upload>
+              </Form.Item>
+              <Form.Item
+                name="content_markdown"
+                label="Summary"
+                rules={[{ required: true, message: 'Please enter lesson summary' }]}
+              >
+                <Input.TextArea rows={10} placeholder="# Lesson summary&#10;Write markdown summary here..." />
               </Form.Item>
               <Form.Item name="min_watch_time" label="Minimum Watch Time (seconds)" initialValue={120}>
                 <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-            </>
-          )}
-
-          {createLessonType === 'text' && (
-            <>
-              <Form.Item
-                name="content_markdown"
-                label="Markdown Content"
-                rules={[{ required: true, message: 'Please enter lesson content' }]}
-              >
-                <Input.TextArea rows={10} placeholder="# Lesson title&#10;Write markdown content here..." />
               </Form.Item>
               <Card title="Preview" size="small">
                 <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{createMarkdown || 'Nothing to preview yet.'}</pre>
@@ -404,16 +403,17 @@ export function AdminModuleLessonsPage() {
               key: 'content',
               ellipsis: true,
               render: (_, record) => {
-                if (record.lesson_type === 'video')
+                if (record.lesson_type === 'lesson')
                   return record.video_url || '-'
-                if (record.lesson_type === 'text')
-                  return record.content_markdown ? 'Markdown content' : '-'
+                if (record.content_markdown)
+                  return 'Summary markdown'
                 if (Array.isArray(record.quiz_questions))
                   return `${record.quiz_questions.length} question(s)`
                 return '-'
               },
             },
             { title: 'Watch Time', dataIndex: 'min_watch_time', key: 'min_watch_time', width: 120 },
+            { title: 'Transcript', dataIndex: 'transcript_status', key: 'transcript_status', width: 140 },
             { title: 'Order', dataIndex: 'order_index', key: 'order_index', width: 100 },
             {
               title: 'Actions',
@@ -459,25 +459,30 @@ export function AdminModuleLessonsPage() {
             <Select options={lessonTypeOptions} />
           </Form.Item>
 
-          {editLessonType === 'video' && (
+          {editLessonType === 'lesson' && (
             <>
-              <Form.Item name="video_url" label="Video URL" rules={[{ required: true, message: 'Please enter a video URL' }]}>
+              <Form.Item name="video_url" label="Video URL (optional if uploading file)">
                 <Input />
+              </Form.Item>
+              <Form.Item
+                name="video_file"
+                label="Replace Video File"
+                valuePropName="fileList"
+                getValueFromEvent={(event) => (Array.isArray(event) ? event : event?.fileList)}
+              >
+                <Upload beforeUpload={() => false} maxCount={1}>
+                  <Button>Select Video File</Button>
+                </Upload>
+              </Form.Item>
+              <Form.Item
+                name="content_markdown"
+                label="Summary"
+                rules={[{ required: true, message: 'Please enter lesson summary' }]}
+              >
+                <Input.TextArea rows={10} />
               </Form.Item>
               <Form.Item name="min_watch_time" label="Minimum Watch Time (seconds)" rules={[{ required: true, message: 'Please enter minimum watch time' }]}>
                 <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-            </>
-          )}
-
-          {editLessonType === 'text' && (
-            <>
-              <Form.Item
-                name="content_markdown"
-                label="Markdown Content"
-                rules={[{ required: true, message: 'Please enter lesson content' }]}
-              >
-                <Input.TextArea rows={10} />
               </Form.Item>
               <Card title="Preview" size="small">
                 <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{editMarkdown || 'Nothing to preview yet.'}</pre>

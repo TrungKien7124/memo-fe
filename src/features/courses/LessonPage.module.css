@@ -186,6 +186,13 @@
   opacity: 0.9;
 }
 
+.videoPlayer {
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-xl);
+  background: #000;
+}
+
 .playIcon {
   width: 80px;
   height: 80px;

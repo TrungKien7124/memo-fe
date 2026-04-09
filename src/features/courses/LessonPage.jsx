@@ -3,8 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { Alert, Button, Card, Input, Radio, Space, Spin, Typography } from 'antd'
 import { ArrowLeftOutlined, CloseOutlined, PlayCircleOutlined } from '@ant-design/icons'
 import clsx from 'clsx'
-import { getLessonDetailAPI, markLessonProgressAPI, submitQuizAnswerAPI } from './courseService'
+import { getLessonDetailAPI, getLessonPlaybackAPI, markLessonProgressAPI, submitQuizAnswerAPI } from './courseService'
 import { postLessonChatAPI } from './lessonChatService'
+import { LessonCommentsPanel } from './LessonCommentsPanel'
 import { getApiErrorMessage } from '../../utils/apiError'
 import styles from './LessonPage.module.css'
 
@@ -23,6 +24,7 @@ export function LessonPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [lesson, setLesson] = useState(null)
+  const [playbackUrl, setPlaybackUrl] = useState('')
   const [completed, setCompleted] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -58,6 +60,7 @@ export function LessonPage() {
       setLessonChatContextStatus(null)
       setLessonChatSendError(null)
       setLessonChatSending(false)
+      setPlaybackUrl('')
       try {
         const lessonData = await getLessonDetailAPI(lessonId)
         const questions = normalizeQuizQuestions(lessonData)
@@ -75,6 +78,13 @@ export function LessonPage() {
         })
         setSelectedAnswer(null)
         setQuizResult(null)
+        if (lessonData.lesson_type === 'lesson')
+          try {
+            const playback = await getLessonPlaybackAPI(lessonId)
+            setPlaybackUrl(playback.stream_url || '')
+          } catch {
+            setPlaybackUrl('')
+          }
       } catch (err) {
         setLesson(null)
         setCompleted(false)
@@ -195,18 +205,6 @@ export function LessonPage() {
         return
       }
 
-      if (lesson.lesson_type === 'text') {
-        const { progress: updatedProgress } = await markLessonProgressAPI(lessonId, { completed: true })
-        const isCompleted = Boolean(updatedProgress?.completed)
-        setCompleted(isCompleted)
-        setProgress(isCompleted ? 100 : 0)
-        if (isCompleted) {
-          navigate(`/courses/${id}`)
-          return
-        }
-        return
-      }
-
       const watchedSeconds = lesson.min_watch_time || 120
       const { progress: updatedProgress } = await markLessonProgressAPI(lessonId, { watched_seconds: watchedSeconds })
       const isCompleted = Boolean(updatedProgress?.completed)
@@ -226,16 +224,6 @@ export function LessonPage() {
   function renderLessonBody() {
     if (!lesson)
       return <Alert type="error" showIcon message={error || 'Lesson not found.'} />
-
-    if (lesson.lesson_type === 'text') {
-      return (
-        <Card style={{ width: '100%', maxWidth: 900 }}>
-          <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0 }}>
-            {lesson.content_markdown || 'No content available for this text lesson.'}
-          </Paragraph>
-        </Card>
-      )
-    }
 
     if (lesson.lesson_type === 'quiz') {
       const questions = normalizeQuizQuestions(lesson)
@@ -301,11 +289,20 @@ export function LessonPage() {
     }
 
     return (
-      <div className={styles.videoPlaceholder}>
-        <div className={styles.playIcon}>
-          <PlayCircleOutlined />
+      <Card style={{ width: '100%', maxWidth: 900 }}>
+        <div className={styles.videoPlaceholder}>
+          {playbackUrl ? (
+            <video className={styles.videoPlayer} controls src={playbackUrl} />
+          ) : (
+            <div className={styles.playIcon}>
+              <PlayCircleOutlined />
+            </div>
+          )}
         </div>
-      </div>
+        <Paragraph style={{ whiteSpace: 'pre-wrap', marginBottom: 0, marginTop: 16 }}>
+          {lesson.content_markdown || 'No summary available for this lesson.'}
+        </Paragraph>
+      </Card>
     )
   }
 
@@ -451,6 +448,7 @@ export function LessonPage() {
                 Answer each question one-by-one. You have 5 hearts for wrong answers.
               </Text>
             )}
+            {lesson && <LessonCommentsPanel lessonId={lesson.id} />}
           </section>
           {lesson && (
             <aside className={styles.lessonSidebar}>

@@ -27,10 +27,12 @@ export function CourseDetailPage() {
       setLoading(true)
       setErrorMessages([])
       try {
-        const [courseRes, modulesRes] = await Promise.all([
-          getCourseDetailAPI(id),
-          getModulesAPI(id),
-        ])
+        const courseRes = await getCourseDetailAPI(id)
+        if (!courseRes.isEnrolled) {
+          navigate(`/courses/${id}/checkout`, { replace: true })
+          return
+        }
+        const modulesRes = await getModulesAPI(id)
         setCourse(courseRes)
         const nextErrors = []
 

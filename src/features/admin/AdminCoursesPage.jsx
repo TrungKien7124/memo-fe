@@ -13,18 +13,6 @@ import styles from './AdminCoursesPage.module.css'
 
 const { Title, Text } = Typography
 
-function normalizeListResponse(data) {
-  if (Array.isArray(data))
-    return data
-  if (Array.isArray(data?.data))
-    return data.data
-  if (Array.isArray(data?.results))
-    return data.results
-  if (Array.isArray(data?.data?.results))
-    return data.data.results
-  return []
-}
-
 function statusColor(status) {
   if (status === 'published')
     return 'green'
@@ -47,7 +35,7 @@ export function AdminCoursesPage() {
     setLoading(true)
     try {
       const coursesData = await getAdminCoursesAPI()
-      setCourses(normalizeListResponse(coursesData))
+      setCourses(Array.isArray(coursesData) ? coursesData : [])
     } catch (error) {
       const parsed = parseApiError(error, 'Failed to load courses')
       message.error(parsed.message)
@@ -174,6 +162,9 @@ export function AdminCoursesPage() {
                 <Space>
                   <Button onClick={() => navigate(`/admin/courses/${record.id}/modules`)}>
                     Manage Modules
+                  </Button>
+                  <Button onClick={() => navigate(`/admin/courses/${record.id}/access`)}>
+                    Manage Access
                   </Button>
                   <Button icon={<EditOutlined />} onClick={() => handleOpenEditCourseModal(record)}>
                     Edit

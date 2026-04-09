@@ -1,5 +1,6 @@
 import { useLocation, Link } from 'react-router-dom'
-import { useSelector } from 'react-redux'
+import { useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import clsx from 'clsx'
 import {
   HomeOutlined,
@@ -9,8 +10,10 @@ import {
   TrophyOutlined,
   UserOutlined,
   SafetyCertificateOutlined,
+  LogoutOutlined,
 } from '@ant-design/icons'
 import { USER_ROLES } from '../../utils/constants'
+import { logout } from '../../features/auth/authSlice'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -24,8 +27,15 @@ const NAV_ITEMS = [
 
 export function Sidebar({ className, isDrawer = false }) {
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
   const currentUserRole = useSelector((state) => state.auth?.user?.role)
   const isAdmin = currentUserRole === USER_ROLES.ADMIN
+
+  function handleLogout() {
+    dispatch(logout())
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className={clsx(styles.sidebar, isDrawer && styles.drawerSidebar, className)}>
@@ -65,6 +75,11 @@ export function Sidebar({ className, isDrawer = false }) {
           </Link>
         )}
       </nav>
+
+      <button type="button" onClick={handleLogout} className={styles.logoutButton}>
+        <LogoutOutlined className={styles.navIcon} />
+        <span>Logout</span>
+      </button>
     </div>
   )
 }

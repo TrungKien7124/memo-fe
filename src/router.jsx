@@ -1,14 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { MainLayout } from './components/Layout/MainLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { AdminRoute } from './components/AdminRoute'
 import { AdminLayout } from './components/admin/AdminLayout'
+import { getDefaultRouteByRole } from './utils/roleRouting'
 
 import { LoginPage } from './features/auth/LoginPage'
 import { RegisterPage } from './features/auth/RegisterPage'
 import { DashboardPage } from './features/dashboard/DashboardPage'
 import { CoursesPage } from './features/courses/CoursesPage'
 import { CourseDetailPage } from './features/courses/CourseDetailPage'
+import { CourseCheckoutPage } from './features/courses/CourseCheckoutPage'
 import { LessonPage } from './features/courses/LessonPage'
 import { FoldersPage } from './features/flashcard/FoldersPage'
 import { FlashcardListPage } from './features/flashcard/FlashcardListPage'
@@ -21,6 +24,15 @@ import { ProfileStatsPage } from './features/gamification/ProfileStatsPage'
 import { AdminCoursesPage } from './features/admin/AdminCoursesPage'
 import { AdminCourseModulesPage } from './features/admin/AdminCourseModulesPage'
 import { AdminModuleLessonsPage } from './features/admin/AdminModuleLessonsPage'
+import { AdminCourseAccessPage } from './features/admin/AdminCourseAccessPage'
+
+function RoleAwareRootRedirect() {
+  const isAuthenticated = useSelector((state) => state.auth?.isAuthenticated)
+  const userRole = useSelector((state) => state.auth?.user?.role)
+
+  if (!isAuthenticated) return <Navigate to="/login" replace />
+  return <Navigate to={getDefaultRouteByRole(userRole)} replace />
+}
 
 export function AppRouter() {
   return (
@@ -33,6 +45,7 @@ export function AppRouter() {
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
+          <Route path="/courses/:id/checkout" element={<CourseCheckoutPage />} />
           <Route path="/flashcards" element={<FoldersPage />} />
           <Route path="/flashcards/:folderId" element={<FlashcardListPage />} />
           <Route path="/review/history" element={<ReviewHistory />} />
@@ -47,6 +60,7 @@ export function AppRouter() {
             <Route path="/admin" element={<Navigate to="/admin/courses" replace />} />
             <Route path="/admin/courses" element={<AdminCoursesPage />} />
             <Route path="/admin/courses/:courseId/modules" element={<AdminCourseModulesPage />} />
+            <Route path="/admin/courses/:courseId/access" element={<AdminCourseAccessPage />} />
             <Route path="/admin/modules/:moduleId/lessons" element={<AdminModuleLessonsPage />} />
           </Route>
         </Route>
@@ -57,8 +71,8 @@ export function AppRouter() {
         <Route path="/speaking/:sessionId" element={<SpeakingSession />} />
       </Route>
 
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<RoleAwareRootRedirect />} />
+      <Route path="*" element={<RoleAwareRootRedirect />} />
     </Routes>
   )
 }

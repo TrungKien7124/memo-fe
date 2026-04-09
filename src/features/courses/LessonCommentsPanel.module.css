@@ -1,0 +1,29 @@
+.panel {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 16px;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.commentNode {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.commentHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}

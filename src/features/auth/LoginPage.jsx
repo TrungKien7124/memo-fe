@@ -6,6 +6,7 @@ import { MailOutlined, LockOutlined } from '@ant-design/icons'
 import { loginSuccess, setLoading, setError, setIdle } from './authSlice'
 import { loginAPI } from './authService'
 import { applyFormApiError, parseApiError } from '../../utils/apiError'
+import { getDefaultRouteByRole } from '../../utils/roleRouting'
 import styles from './LoginPage.module.css'
 
 export function LoginPage() {
@@ -29,7 +30,7 @@ export function LoginPage() {
         refresh,
       }))
       message.success('Welcome back!')
-      navigate('/dashboard')
+      navigate(getDefaultRouteByRole(user.role), { replace: true })
     } catch (err) {
       const parsedError = parseApiError(err, 'Login failed')
       applyFormApiError(form, parsedError)

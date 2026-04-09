@@ -1,6 +1,18 @@
 import axiosClient from '../../services/axiosClient'
 import { assertSuccessEnvelope, parseListPayload } from '../../utils/apiEnvelope'
 
+function buildLessonFormData(payload) {
+  const formData = new FormData()
+  Object.entries(payload || {}).forEach(([key, value]) => {
+    if (value === undefined || value === null) return
+    if (key === 'quiz_questions')
+      formData.append(key, JSON.stringify(value))
+    else
+      formData.append(key, value)
+  })
+  return formData
+}
+
 export async function getAdminCoursesAPI() {
   const { data } = await axiosClient.get('/api/courses/')
   return parseListPayload(data, 'admin courses list')
@@ -61,16 +73,46 @@ export async function getAdminLessonsAPI(moduleId) {
 }
 
 export async function createAdminLessonAPI(payload) {
-  const { data } = await axiosClient.post('/api/lessons/', payload)
+  const hasVideoFile = Boolean(payload?.video_file)
+  const body = hasVideoFile ? buildLessonFormData(payload) : payload
+  const { data } = await axiosClient.post('/api/lessons/', body, {
+    headers: hasVideoFile ? { 'Content-Type': 'multipart/form-data' } : undefined,
+  })
   return assertSuccessEnvelope(data, 'admin lesson create')
 }
 
 export async function updateAdminLessonAPI(lessonId, payload) {
-  const { data } = await axiosClient.patch(`/api/lessons/${lessonId}/`, payload)
+  const hasVideoFile = Boolean(payload?.video_file)
+  const body = hasVideoFile ? buildLessonFormData(payload) : payload
+  const { data } = await axiosClient.patch(`/api/lessons/${lessonId}/`, body, {
+    headers: hasVideoFile ? { 'Content-Type': 'multipart/form-data' } : undefined,
+  })
   return assertSuccessEnvelope(data, 'admin lesson update')
 }
 
 export async function deleteAdminLessonAPI(lessonId) {
   const { data } = await axiosClient.delete(`/api/lessons/${lessonId}/`)
   return assertSuccessEnvelope(data, 'admin lesson delete')
+}
+
+export async function getCourseEnrollmentsAPI(courseId) {
+  const { data } = await axiosClient.get(`/api/courses/${courseId}/enrollments/`)
+  return parseListPayload(data, 'course enrollments list')
+}
+
+export async function grantCourseAccessAPI(courseId, userId) {
+  const { data } = await axiosClient.post(`/api/courses/${courseId}/enrollments/`, {
+    user_id: userId,
+  })
+  return assertSuccessEnvelope(data, 'course enrollment grant')
+}
+
+export async function revokeCourseAccessAPI(courseId, enrollmentId) {
+  const { data } = await axiosClient.delete(`/api/courses/${courseId}/enrollments/${enrollmentId}/`)
+  return assertSuccessEnvelope(data, 'course enrollment revoke')
+}
+
+export async function bulkGrantTeachersCourseAccessAPI(courseId) {
+  const { data } = await axiosClient.post(`/api/courses/${courseId}/enrollments/bulk-grant-teachers/`, {})
+  return assertSuccessEnvelope(data, 'course enrollment bulk grant teachers')
 }

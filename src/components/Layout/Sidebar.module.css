@@ -103,3 +103,28 @@
 .navIcon {
   font-size: 20px;
 }
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  font-weight: 600;
+  color: var(--color-error);
+  border: 2px solid var(--color-border);
+  background: var(--color-bg);
+  transition: background var(--transition-fast), border-color var(--transition-fast);
+  text-decoration: none;
+  height: 52px;
+  width: 100%;
+  margin-top: auto;
+  margin-bottom: var(--space-4);
+  cursor: pointer;
+}
+
+.logoutButton:hover {
+  background: #fff3f3;
+  border-color: var(--color-error);
+}
