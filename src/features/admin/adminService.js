@@ -5,6 +5,8 @@ function buildLessonFormData(payload) {
   const formData = new FormData()
   Object.entries(payload || {}).forEach(([key, value]) => {
     if (value === undefined || value === null) return
+    if ((key === 'video_file' || key === 'transcript_file') && !(value instanceof File || value instanceof Blob))
+      return
     if (key === 'quiz_questions')
       formData.append(key, JSON.stringify(value))
     else
@@ -31,6 +33,11 @@ export async function getAdminCourseByIdAPI(courseId) {
 export async function updateAdminCourseAPI(courseId, payload) {
   const { data } = await axiosClient.patch(`/api/courses/${courseId}/`, payload)
   return assertSuccessEnvelope(data, 'admin course update')
+}
+
+export async function extendStoreAdminCourseAPI(courseId, payload) {
+  const { data } = await axiosClient.patch(`/api/courses/${courseId}/extend-store/`, payload)
+  return assertSuccessEnvelope(data, 'admin course extend store')
 }
 
 export async function deleteAdminCourseAPI(courseId) {
@@ -60,6 +67,11 @@ export async function updateAdminModuleAPI(moduleId, payload) {
   return assertSuccessEnvelope(data, 'admin module update')
 }
 
+export async function extendStoreAdminModuleAPI(moduleId, payload) {
+  const { data } = await axiosClient.patch(`/api/modules/${moduleId}/extend-store/`, payload)
+  return assertSuccessEnvelope(data, 'admin module extend store')
+}
+
 export async function deleteAdminModuleAPI(moduleId) {
   const { data } = await axiosClient.delete(`/api/modules/${moduleId}/`)
   return assertSuccessEnvelope(data, 'admin module delete')
@@ -72,21 +84,45 @@ export async function getAdminLessonsAPI(moduleId) {
   return parseListPayload(data, 'admin lessons list')
 }
 
-export async function createAdminLessonAPI(payload) {
-  const hasVideoFile = Boolean(payload?.video_file)
-  const body = hasVideoFile ? buildLessonFormData(payload) : payload
-  const { data } = await axiosClient.post('/api/lessons/', body, {
-    headers: hasVideoFile ? { 'Content-Type': 'multipart/form-data' } : undefined,
+export async function getAdminLessonByIdAPI(lessonId) {
+  const { data } = await axiosClient.get(`/api/lessons/${lessonId}/`)
+  return assertSuccessEnvelope(data, 'admin lesson detail')
+}
+
+export async function getAdminLessonPipelineStatusAPI(lessonId) {
+  const { data } = await axiosClient.get(`/api/lesson-ingestion/lessons/${lessonId}/status/`)
+  return assertSuccessEnvelope(data, 'admin lesson pipeline status')
+}
+
+export async function getAdminLessonPipelineStatusBatchAPI(lessonIds) {
+  const { data } = await axiosClient.post('/api/lesson-ingestion/lessons/status/batch/', {
+    lesson_ids: lessonIds,
   })
+  const envelopeData = assertSuccessEnvelope(data, 'admin lesson pipeline status batch')
+  if (!envelopeData || typeof envelopeData !== 'object')
+    throw new Error('Invalid admin lesson pipeline status batch envelope data')
+  if (!Array.isArray(envelopeData.records))
+    throw new Error('Missing records in admin lesson pipeline status batch')
+  return {
+    records: envelopeData.records,
+    missing_lesson_ids: Array.isArray(envelopeData.missing_lesson_ids)
+      ? envelopeData.missing_lesson_ids
+      : [],
+  }
+}
+
+export async function createAdminLessonAPI(payload) {
+  const hasBinaryFile = Boolean(payload?.video_file) || Boolean(payload?.transcript_file)
+  const body = hasBinaryFile ? buildLessonFormData(payload) : payload
+  // Let Axios/browser set multipart boundary automatically for FormData.
+  const { data } = await axiosClient.post('/api/lessons/', body)
   return assertSuccessEnvelope(data, 'admin lesson create')
 }
 
 export async function updateAdminLessonAPI(lessonId, payload) {
-  const hasVideoFile = Boolean(payload?.video_file)
-  const body = hasVideoFile ? buildLessonFormData(payload) : payload
-  const { data } = await axiosClient.patch(`/api/lessons/${lessonId}/`, body, {
-    headers: hasVideoFile ? { 'Content-Type': 'multipart/form-data' } : undefined,
-  })
+  const hasBinaryFile = Boolean(payload?.video_file) || Boolean(payload?.transcript_file)
+  const body = hasBinaryFile ? buildLessonFormData(payload) : payload
+  const { data } = await axiosClient.patch(`/api/lessons/${lessonId}/`, body)
   return assertSuccessEnvelope(data, 'admin lesson update')
 }
 

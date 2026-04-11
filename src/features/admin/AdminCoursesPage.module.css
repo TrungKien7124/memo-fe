@@ -4,6 +4,21 @@
   gap: 16px;
 }
 
+.embeddedRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.courseTitleLink {
+  padding: 0 !important;
+  height: auto !important;
+  font-weight: 500;
+  text-align: left;
+  white-space: normal;
+  word-break: break-word;
+}
+
 .header {
   background: var(--color-bg);
   border-radius: var(--radius-lg);
@@ -27,4 +42,13 @@
 .tableCard {
   border-radius: var(--radius-lg) !important;
   box-shadow: var(--shadow-card);
+}
+
+.draggableRow {
+  cursor: grab;
+}
+
+.draggingRow {
+  cursor: grabbing;
+  opacity: 0.6;
 }

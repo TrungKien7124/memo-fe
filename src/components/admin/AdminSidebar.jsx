@@ -1,10 +1,11 @@
 import clsx from 'clsx'
-import { BookOutlined, HomeOutlined, SettingOutlined } from '@ant-design/icons'
+import { BookOutlined, CloudUploadOutlined, HomeOutlined, SettingOutlined } from '@ant-design/icons'
 import { Link, useLocation } from 'react-router-dom'
 import styles from './AdminSidebar.module.css'
 
 const ADMIN_NAV_ITEMS = [
   { label: 'Courses', path: '/admin/courses', icon: BookOutlined },
+  { label: 'Lesson Upload', path: '/admin/lesson-upload', icon: CloudUploadOutlined },
 ]
 
 export function AdminSidebar({ className, isDrawer = false, onNavigate }) {

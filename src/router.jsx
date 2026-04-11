@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useParams, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import { MainLayout } from './components/Layout/MainLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
@@ -22,9 +22,37 @@ import { SpeakingSession } from './features/speaking/SpeakingSession'
 import { LeaderboardPage } from './features/gamification/LeaderboardPage'
 import { ProfileStatsPage } from './features/gamification/ProfileStatsPage'
 import { AdminCoursesPage } from './features/admin/AdminCoursesPage'
-import { AdminCourseModulesPage } from './features/admin/AdminCourseModulesPage'
+import { AdminCourseDetailPage } from './features/admin/AdminCourseDetailPage'
 import { AdminModuleLessonsPage } from './features/admin/AdminModuleLessonsPage'
-import { AdminCourseAccessPage } from './features/admin/AdminCourseAccessPage'
+import { AdminLessonDetailPage } from './features/admin/AdminLessonDetailPage'
+import { AdminLessonUploadPage } from './features/admin/AdminLessonUploadPage'
+
+function AdminCourseManagePathRedirect() {
+  const { courseId } = useParams()
+  const { pathname } = useLocation()
+  const sub = pathname.includes('/access') ? 'access' : 'modules'
+  return <Navigate to={`/admin/course/detail/${courseId}?sub=${sub}`} replace />
+}
+
+function AdminLegacyCourseModulesRedirect() {
+  const { courseId } = useParams()
+  return <Navigate to={`/admin/course/detail/${courseId}?sub=modules`} replace />
+}
+
+function AdminLegacyCourseAccessRedirect() {
+  const { courseId } = useParams()
+  return <Navigate to={`/admin/course/detail/${courseId}?sub=access`} replace />
+}
+
+function AdminLegacyModuleLessonsRedirect() {
+  const { moduleId } = useParams()
+  return <Navigate to={`/admin/module/detail/${moduleId}?sub=lessons`} replace />
+}
+
+function AdminLegacyLessonDetailRedirect() {
+  const { lessonId } = useParams()
+  return <Navigate to={`/admin/lesson/detail/${lessonId}`} replace />
+}
 
 function RoleAwareRootRedirect() {
   const isAuthenticated = useSelector((state) => state.auth?.isAuthenticated)
@@ -59,9 +87,15 @@ export function AppRouter() {
           <Route element={<AdminLayout />}>
             <Route path="/admin" element={<Navigate to="/admin/courses" replace />} />
             <Route path="/admin/courses" element={<AdminCoursesPage />} />
-            <Route path="/admin/courses/:courseId/modules" element={<AdminCourseModulesPage />} />
-            <Route path="/admin/courses/:courseId/access" element={<AdminCourseAccessPage />} />
-            <Route path="/admin/modules/:moduleId/lessons" element={<AdminModuleLessonsPage />} />
+            <Route path="/admin/lesson-upload" element={<AdminLessonUploadPage />} />
+            <Route path="/admin/course/detail/:courseId" element={<AdminCourseDetailPage />} />
+            <Route path="/admin/module/detail/:moduleId" element={<AdminModuleLessonsPage />} />
+            <Route path="/admin/lesson/detail/:lessonId" element={<AdminLessonDetailPage />} />
+            <Route path="/admin/courses/:courseId/manage/*" element={<AdminCourseManagePathRedirect />} />
+            <Route path="/admin/courses/:courseId/modules" element={<AdminLegacyCourseModulesRedirect />} />
+            <Route path="/admin/courses/:courseId/access" element={<AdminLegacyCourseAccessRedirect />} />
+            <Route path="/admin/modules/:moduleId/lessons" element={<AdminLegacyModuleLessonsRedirect />} />
+            <Route path="/admin/lessons/:lessonId" element={<AdminLegacyLessonDetailRedirect />} />
           </Route>
         </Route>
 

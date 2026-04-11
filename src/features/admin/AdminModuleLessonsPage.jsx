@@ -1,89 +1,95 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
-  Alert,
   Button,
   Card,
+  Descriptions,
   Form,
   Input,
-  InputNumber,
   Modal,
-  Popconfirm,
-  Radio,
-  Select,
   Space,
-  Switch,
+  Spin,
   Table,
+  Tabs,
   Tag,
   Typography,
-  Upload,
   message,
 } from 'antd'
-import { ArrowLeftOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons'
+import { EyeOutlined } from '@ant-design/icons'
 import { useNavigate, useParams } from 'react-router-dom'
+import { AdminEntityDetailFrame } from '../../components/admin/AdminEntityDetailFrame'
+import { AdminListCreateLayout } from '../../components/admin/AdminListCreateLayout'
+import { TableEditDeleteActions } from '../../components/admin/TableEditDeleteActions'
 import {
-  createAdminLessonAPI,
   deleteAdminLessonAPI,
+  extendStoreAdminModuleAPI,
+  getAdminLessonPipelineStatusAPI,
+  getAdminLessonPipelineStatusBatchAPI,
   getAdminLessonsAPI,
   getAdminModuleByIdAPI,
-  updateAdminLessonAPI,
 } from './adminService'
 import { applyFormApiError, parseApiError } from '../../utils/apiError'
 import styles from './AdminCoursesPage.module.css'
+import detailStyles from './AdminCourseDetailPage.module.css'
 
-const { Title, Text } = Typography
-const LESSON_TYPES = ['lesson', 'quiz']
+const { Text } = Typography
+const PIPELINE_POLL_MS = 10000
+const PIPELINE_STATUS_BATCH_SIZE = 100
+const SUB_LESSONS = 'lessons'
 
-function normalizeListResponse(data) {
-  if (Array.isArray(data))
-    return data
-  if (Array.isArray(data?.data))
-    return data.data
-  if (Array.isArray(data?.results))
-    return data.results
-  if (Array.isArray(data?.data?.results))
-    return data.data.results
-  return []
+function lessonNeedsPipelinePoll(lesson) {
+  const publicationStatus = lesson?.publication_status
+  return publicationStatus === 'draft' || publicationStatus === 'processing'
 }
 
-function normalizeQuizQuestion(item) {
-  const options = Array.isArray(item?.options) ? item.options.slice(0, 4) : []
-  while (options.length < 4)
-    options.push('')
+function publicationStatusTagColor(status) {
+  if (status === 'ready')
+    return 'success'
+  if (status === 'failed')
+    return 'error'
+  if (status === 'processing')
+    return 'blue'
+  return 'default'
+}
 
+function applyPipelineSnapshot(row, pipeline) {
   return {
-    question: item?.question || '',
-    options,
-    correct_index: Number.isInteger(item?.correct_index) ? item.correct_index : 0,
+    ...row,
+    publication_status: pipeline.publication_status,
+    is_active: pipeline.is_active,
+    publication_error: pipeline.publication_error ?? '',
+    transcript_status: pipeline.transcript_status,
+    transcript_error: pipeline.transcript_error ?? '',
+    _pipelineSnapshot: pipeline,
   }
 }
 
-function normalizeLessonPayload(values) {
-  const lessonType = values.lesson_type || 'lesson'
-  const quizQuestions = Array.isArray(values.quiz_questions)
-    ? values.quiz_questions.map(normalizeQuizQuestion)
-    : []
-
-  if (lessonType === 'lesson') {
-    const fileList = Array.isArray(values.video_file) ? values.video_file : []
-    const firstFile = fileList[0]?.originFileObj || null
-    return {
-      ...values,
-      lesson_type: 'lesson',
-      video_file: firstFile,
-      quiz_questions: [],
-      is_final: false,
+async function fetchAndMergePipelineRows(rows) {
+  const pending = rows.filter(lessonNeedsPipelinePoll)
+  if (pending.length === 0)
+    return rows
+  const merged = rows.map((row) => ({ ...row }))
+  try {
+    const lessonIds = pending.map((lesson) => lesson.id)
+    const snapshotByLessonId = new Map()
+    for (let offset = 0; offset < lessonIds.length; offset += PIPELINE_STATUS_BATCH_SIZE) {
+      const slice = lessonIds.slice(offset, offset + PIPELINE_STATUS_BATCH_SIZE)
+      const { records } = await getAdminLessonPipelineStatusBatchAPI(slice)
+      for (const snapshot of records)
+        snapshotByLessonId.set(String(snapshot.lesson_id), snapshot)
+    }
+    for (const lesson of pending) {
+      const pipeline = snapshotByLessonId.get(String(lesson.id))
+      if (!pipeline)
+        continue
+      const index = merged.findIndex((r) => r.id === lesson.id)
+      if (index >= 0)
+        merged[index] = applyPipelineSnapshot(merged[index], pipeline)
     }
   }
-
-  return {
-    ...values,
-    lesson_type: 'quiz',
-    video_url: '',
-    video_file: null,
-    content_markdown: '',
-    min_watch_time: 0,
-    quiz_questions: quizQuestions,
+  catch {
+    // keep existing row on transient errors
   }
+  return merged
 }
 
 function lessonTypeLabel(lessonType) {
@@ -102,26 +108,41 @@ function lessonTypeColor(lessonType) {
   return 'blue'
 }
 
+function toLessonOrderPayload(lessonList) {
+  return lessonList.map((lesson, index) => ({
+    id: String(lesson.id),
+    order_index: index + 1,
+  }))
+}
+
+function reorderByIds(items, fromId, toId) {
+  const fromIndex = items.findIndex((item) => String(item.id) === String(fromId))
+  const toIndex = items.findIndex((item) => String(item.id) === String(toId))
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex)
+    return items
+  const next = [...items]
+  const [moved] = next.splice(fromIndex, 1)
+  next.splice(toIndex, 0, moved)
+  return next
+}
+
 export function AdminModuleLessonsPage() {
   const { moduleId } = useParams()
   const navigate = useNavigate()
+  const [saveSubmitting, setSaveSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [module, setModule] = useState(null)
+  const [lessonOrderPayload, setLessonOrderPayload] = useState([])
+  const [draggingLessonId, setDraggingLessonId] = useState(null)
   const [lessons, setLessons] = useState([])
-  const [editingLesson, setEditingLesson] = useState(null)
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const [pipelineModalOpen, setPipelineModalOpen] = useState(false)
+  const [pipelineModalLoading, setPipelineModalLoading] = useState(false)
+  const [pipelineDetail, setPipelineDetail] = useState(null)
+  const [pipelineModalTitle, setPipelineModalTitle] = useState('')
 
-  const [createForm] = Form.useForm()
-  const [editForm] = Form.useForm()
-  const createLessonType = Form.useWatch('lesson_type', createForm)
-  const editLessonType = Form.useWatch('lesson_type', editForm)
-  const createMarkdown = Form.useWatch('content_markdown', createForm)
-  const editMarkdown = Form.useWatch('content_markdown', editForm)
+  const lessonsRef = useRef([])
 
-  const lessonTypeOptions = useMemo(
-    () => LESSON_TYPES.map((value) => ({ value, label: lessonTypeLabel(value) })),
-    []
-  )
+  const [moduleForm] = Form.useForm()
 
   async function loadData() {
     if (!moduleId) return
@@ -133,7 +154,13 @@ export function AdminModuleLessonsPage() {
         getAdminLessonsAPI(moduleId),
       ])
       setModule(moduleData)
-      setLessons(normalizeListResponse(lessonsData))
+      moduleForm.setFieldsValue({
+        title: moduleData.title,
+      })
+      const baseList = Array.isArray(lessonsData) ? lessonsData : []
+      const mergedList = await fetchAndMergePipelineRows(baseList)
+      setLessons(mergedList)
+      setLessonOrderPayload(toLessonOrderPayload(mergedList))
     } catch (error) {
       const parsed = parseApiError(error, 'Failed to load lessons')
       message.error(parsed.message)
@@ -144,68 +171,27 @@ export function AdminModuleLessonsPage() {
 
   useEffect(() => {
     loadData()
+  // Intentionally only re-run when module changes; loadData closes over moduleId.
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- module-scoped reload only
   }, [moduleId])
 
-  async function handleCreateLesson(values) {
-    try {
-      const payload = normalizeLessonPayload(values)
-      await createAdminLessonAPI({ ...payload, module: Number(moduleId) || moduleId })
-      message.success('Lesson created successfully')
-      createForm.resetFields()
-      createForm.setFieldsValue({
-        lesson_type: 'lesson',
-        min_watch_time: 120,
-        order_index: 0,
-        is_final: false,
-        quiz_questions: [{ question: '', options: ['', '', '', ''], correct_index: 0 }],
-      })
-      loadData()
-    } catch (error) {
-      const parsed = parseApiError(error, 'Failed to create lesson')
-      applyFormApiError(createForm, parsed)
-      message.error(parsed.message)
-    }
-  }
+  lessonsRef.current = lessons
 
-  function handleOpenEditLessonModal(lesson) {
-    setEditingLesson(lesson)
-    editForm.setFieldsValue({
-      title: lesson.title,
-      lesson_type: lesson.lesson_type || 'lesson',
-      video_url: lesson.video_url,
-      video_file: [],
-      content_markdown: lesson.content_markdown,
-      quiz_questions: Array.isArray(lesson.quiz_questions)
-        ? lesson.quiz_questions.map(normalizeQuizQuestion)
-        : [{ question: '', options: ['', '', '', ''], correct_index: 0 }],
-      is_final: !!lesson.is_final,
-      min_watch_time: lesson.min_watch_time,
-      order_index: lesson.order_index,
-    })
-    setIsEditModalOpen(true)
-  }
-
-  function handleCloseEditLessonModal() {
-    setEditingLesson(null)
-    setIsEditModalOpen(false)
-    editForm.resetFields()
-  }
-
-  async function handleUpdateLesson(values) {
-    if (!editingLesson?.id) return
-
-    try {
-      const payload = normalizeLessonPayload(values)
-      await updateAdminLessonAPI(editingLesson.id, payload)
-      message.success('Lesson updated successfully')
-      handleCloseEditLessonModal()
-      loadData()
-    } catch (error) {
-      const parsed = parseApiError(error, 'Failed to update lesson')
-      applyFormApiError(editForm, parsed)
-      message.error(parsed.message)
-    }
-  }
+  useEffect(() => {
+    if (!moduleId)
+      return undefined
+    const timer = window.setInterval(async () => {
+      const current = lessonsRef.current
+      if (!current.length)
+        return
+      const pending = current.filter(lessonNeedsPipelinePoll)
+      if (pending.length === 0)
+        return
+      const next = await fetchAndMergePipelineRows(current)
+      setLessons(next)
+    }, PIPELINE_POLL_MS)
+    return () => window.clearInterval(timer)
+  }, [moduleId])
 
   async function handleDeleteLesson(lessonId) {
     try {
@@ -218,165 +204,115 @@ export function AdminModuleLessonsPage() {
     }
   }
 
-  function handleBackToModules() {
-    const courseId = module?.course
-    if (!courseId) {
-      navigate('/admin/courses')
-      return
+  async function handleOpenPipelineModal(lesson) {
+    setPipelineModalTitle(lesson?.title || 'Pipeline')
+    setPipelineModalOpen(true)
+    setPipelineModalLoading(true)
+    setPipelineDetail(null)
+    try {
+      const detail = await getAdminLessonPipelineStatusAPI(lesson.id)
+      setPipelineDetail(detail)
     }
-    navigate(`/admin/courses/${courseId}/modules`)
+    catch (error) {
+      const parsed = parseApiError(error, 'Failed to load pipeline status')
+      message.error(parsed.message)
+    }
+    finally {
+      setPipelineModalLoading(false)
+    }
+  }
+
+  function handleClosePipelineModal() {
+    setPipelineModalOpen(false)
+    setPipelineDetail(null)
+    setPipelineModalTitle('')
+  }
+
+  function handleDragStart(lessonId) {
+    setDraggingLessonId(String(lessonId))
+  }
+
+  function handleDragOver(event) {
+    event.preventDefault()
+  }
+
+  function handleDrop(targetLessonId) {
+    if (!draggingLessonId)
+      return
+    const reordered = reorderByIds(lessons, draggingLessonId, targetLessonId)
+    setLessons(reordered)
+    setLessonOrderPayload(toLessonOrderPayload(reordered))
+    setDraggingLessonId(null)
+  }
+
+  function handleDragEnd() {
+    setDraggingLessonId(null)
+  }
+
+  async function handleSaveModuleDetail(values) {
+    if (!moduleId) return
+    setSaveSubmitting(true)
+    try {
+      await extendStoreAdminModuleAPI(moduleId, {
+        title: values.title,
+        lessons: lessonOrderPayload,
+      })
+      message.success('Module updated successfully')
+      loadData()
+    } catch (error) {
+      const parsed = parseApiError(error, 'Failed to save module detail')
+      applyFormApiError(moduleForm, parsed)
+      message.error(parsed.message)
+    } finally {
+      setSaveSubmitting(false)
+    }
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <Space>
-          <Button icon={<ArrowLeftOutlined />} onClick={handleBackToModules}>
-            Back to Modules
-          </Button>
-        </Space>
-        <Title level={2} className={styles.title}>Lesson Management</Title>
-        <Text className={styles.subtitle}>
-          Module: <strong>{module?.title || `#${moduleId}`}</strong>
-        </Text>
-      </div>
-
-      <Card title="Create New Lesson" className={styles.formCard}>
-        <Alert
-          type="info"
-          showIcon
-          message="Lesson Types"
-          description="Lesson: video URL + summary + watch time. Quiz: multiple-choice questions with one correct answer."
-          style={{ marginBottom: 16 }}
-        />
-        <Form form={createForm} layout="vertical" onFinish={handleCreateLesson} requiredMark={false}>
-          <Form.Item name="title" label="Lesson Title" rules={[{ required: true, message: 'Please enter the lesson title' }]}>
-            <Input placeholder="Lesson 1: Hello and Goodbye" />
+    <AdminEntityDetailFrame
+      backPath={module?.course ? `/admin/course/detail/${module.course}?sub=modules` : '/admin/courses'}
+      backLabel="Back to modules"
+      title={module?.title || 'Module detail'}
+      subtitle={moduleId ? `ID: ${moduleId}` : null}
+    >
+      <Card
+        title="Module information"
+        className={`${styles.formCard} ${detailStyles.infoCard}`}
+        loading={loading && !module}
+      >
+        <Form
+          form={moduleForm}
+          layout="vertical"
+          onFinish={handleSaveModuleDetail}
+          requiredMark={false}
+        >
+          <Form.Item name="title" label="Title" rules={[{ required: true, message: 'Title is required' }]}>
+            <Input placeholder="Module title" />
           </Form.Item>
-
-          <Form.Item name="lesson_type" label="Lesson Type" initialValue="lesson">
-            <Select options={lessonTypeOptions} />
-          </Form.Item>
-
-          {createLessonType === 'lesson' && (
-            <>
-              <Form.Item name="video_url" label="Video URL (optional if uploading file)">
-                <Input placeholder="https://youtube.com/..." />
-              </Form.Item>
-              <Form.Item
-                name="video_file"
-                label="Video File Upload"
-                valuePropName="fileList"
-                getValueFromEvent={(event) => (Array.isArray(event) ? event : event?.fileList)}
-              >
-                <Upload beforeUpload={() => false} maxCount={1}>
-                  <Button>Select Video File</Button>
-                </Upload>
-              </Form.Item>
-              <Form.Item
-                name="content_markdown"
-                label="Summary"
-                rules={[{ required: true, message: 'Please enter lesson summary' }]}
-              >
-                <Input.TextArea rows={10} placeholder="# Lesson summary&#10;Write markdown summary here..." />
-              </Form.Item>
-              <Form.Item name="min_watch_time" label="Minimum Watch Time (seconds)" initialValue={120}>
-                <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Card title="Preview" size="small">
-                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{createMarkdown || 'Nothing to preview yet.'}</pre>
-              </Card>
-            </>
-          )}
-
-          {createLessonType === 'quiz' && (
-            <>
-              <Text strong>Quiz Questions</Text>
-              <div style={{ marginTop: 8, marginBottom: 12 }}>
-                <Form.List name="quiz_questions">
-                  {(fields, { add, remove }) => (
-                    <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                      {fields.map(({ key, name, ...restField }, questionIndex) => (
-                        <Card
-                          key={key}
-                          size="small"
-                          title={`Question ${questionIndex + 1}`}
-                          extra={fields.length > 1
-                            ? (
-                                <Button type="link" danger onClick={() => remove(name)}>
-                                  Remove
-                                </Button>
-                              )
-                            : null}
-                        >
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'question']}
-                            label="Question"
-                            rules={[{ required: true, message: 'Please enter question text' }]}
-                          >
-                            <Input.TextArea rows={2} />
-                          </Form.Item>
-
-                          {[0, 1, 2, 3].map((optionIndex) => (
-                            <Form.Item
-                              key={`${key}-${optionIndex}`}
-                              {...restField}
-                              name={[name, 'options', optionIndex]}
-                              label={`Option ${optionIndex + 1}`}
-                              rules={[{ required: true, message: 'Please enter option text' }]}
-                            >
-                              <Input />
-                            </Form.Item>
-                          ))}
-
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'correct_index']}
-                            label="Correct Answer"
-                            rules={[{ required: true, message: 'Please choose the correct answer' }]}
-                          >
-                            <Radio.Group
-                              options={[
-                                { label: 'Option 1', value: 0 },
-                                { label: 'Option 2', value: 1 },
-                                { label: 'Option 3', value: 2 },
-                                { label: 'Option 4', value: 3 },
-                              ]}
-                            />
-                          </Form.Item>
-                        </Card>
-                      ))}
-
-                      <Button
-                        type="dashed"
-                        onClick={() => add({ question: '', options: ['', '', '', ''], correct_index: 0 })}
-                        block
-                        icon={<PlusOutlined />}
-                      >
-                        Add Question
-                      </Button>
-                    </Space>
-                  )}
-                </Form.List>
-              </div>
-
-              <Form.Item name="is_final" label="Final Module Quiz" valuePropName="checked" initialValue={false}>
-                <Switch />
-              </Form.Item>
-            </>
-          )}
-
-          <Form.Item name="order_index" label="Order" initialValue={0}>
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-          <Button type="primary" htmlType="submit" icon={<PlusOutlined />}>
-            Create Lesson
+          <Button type="primary" htmlType="submit" loading={saveSubmitting} size="large">
+            Save changes
           </Button>
         </Form>
       </Card>
 
-      <Card title="Lesson List" className={styles.tableCard}>
+      <div className={detailStyles.lowerSection}>
+        <Text type="secondary" className={detailStyles.lowerHint}>
+          Lessons in this module. Create or edit opens lesson detail page.
+        </Text>
+        <Tabs
+          activeKey={SUB_LESSONS}
+          className={detailStyles.subTabs}
+          items={[
+            {
+              key: SUB_LESSONS,
+              label: 'Lessons',
+              children: (
+                <AdminListCreateLayout
+                  title="Lesson list"
+                  cardClassName={styles.tableCard}
+                  createLabel="Create new lesson"
+                  onCreateClick={() => navigate(`/admin/lesson/detail/new?moduleId=${moduleId}`)}
+                >
         <Table
           rowKey="id"
           loading={loading}
@@ -392,184 +328,114 @@ export function AdminModuleLessonsPage() {
               render: (lessonType) => <Tag color={lessonTypeColor(lessonType)}>{lessonTypeLabel(lessonType)}</Tag>,
             },
             {
-              title: 'Final Quiz',
-              dataIndex: 'is_final',
-              key: 'is_final',
-              width: 120,
-              render: (isFinal) => (isFinal ? <Tag color="green">Final</Tag> : '-'),
-            },
-            {
-              title: 'Content',
-              key: 'content',
-              ellipsis: true,
+              title: 'Publication',
+              key: 'publication_status',
+              width: 130,
               render: (_, record) => {
-                if (record.lesson_type === 'lesson')
-                  return record.video_url || '-'
-                if (record.content_markdown)
-                  return 'Summary markdown'
-                if (Array.isArray(record.quiz_questions))
-                  return `${record.quiz_questions.length} question(s)`
-                return '-'
+                const publicationStatus = record.publication_status || 'ready'
+                return (
+                  <Space direction="vertical" size={0}>
+                    <Tag color={publicationStatusTagColor(publicationStatus)}>
+                      {publicationStatus}
+                    </Tag>
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                      {record.is_active ? 'active' : 'inactive'}
+                    </Text>
+                  </Space>
+                )
               },
             },
-            { title: 'Watch Time', dataIndex: 'min_watch_time', key: 'min_watch_time', width: 120 },
-            { title: 'Transcript', dataIndex: 'transcript_status', key: 'transcript_status', width: 140 },
-            { title: 'Order', dataIndex: 'order_index', key: 'order_index', width: 100 },
+            {
+              title: 'Transcript',
+              dataIndex: 'transcript_status',
+              key: 'transcript_status',
+              width: 130,
+              render: (value) => <Tag>{value || '—'}</Tag>,
+            },
+            {
+              title: 'Pipeline',
+              key: 'pipeline',
+              width: 100,
+              render: (_, record) => (
+                <Button type="text" icon={<EyeOutlined />} onClick={() => handleOpenPipelineModal(record)} />
+              ),
+            },
             {
               title: 'Actions',
               key: 'actions',
-              width: 260,
+              width: 90,
               render: (_, record) => (
-                <Space>
-                  <Button icon={<EditOutlined />} onClick={() => handleOpenEditLessonModal(record)}>
-                    Edit
-                  </Button>
-                  <Popconfirm
-                    title="Delete this lesson?"
-                    description="This action cannot be undone."
-                    okText="Delete"
-                    cancelText="Cancel"
-                    onConfirm={() => handleDeleteLesson(record.id)}
-                  >
-                    <Button danger icon={<DeleteOutlined />}>
-                      Delete
-                    </Button>
-                  </Popconfirm>
-                </Space>
+                <TableEditDeleteActions
+                  onEdit={() => navigate(`/admin/lesson/detail/${record.id}`)}
+                  onDelete={() => handleDeleteLesson(record.id)}
+                  deleteTitle="Delete this lesson?"
+                />
+              ),
+            },
+          ]}
+          onRow={(record) => ({
+            draggable: true,
+            onDragStart: () => handleDragStart(record.id),
+            onDragOver: handleDragOver,
+            onDrop: () => handleDrop(record.id),
+            onDragEnd: handleDragEnd,
+            className: draggingLessonId === String(record.id) ? styles.draggingRow : styles.draggableRow,
+          })}
+        />
+                </AdminListCreateLayout>
               ),
             },
           ]}
         />
-      </Card>
+      </div>
 
       <Modal
-        title="Edit Lesson"
-        open={isEditModalOpen}
-        onCancel={handleCloseEditLessonModal}
-        onOk={() => editForm.submit()}
-        okText="Save"
-        cancelText="Cancel"
+        title={pipelineModalTitle ? `Pipeline — ${pipelineModalTitle}` : 'Pipeline'}
+        open={pipelineModalOpen}
+        onCancel={handleClosePipelineModal}
+        footer={null}
+        width={720}
       >
-        <Form form={editForm} layout="vertical" onFinish={handleUpdateLesson} requiredMark={false}>
-          <Form.Item name="title" label="Lesson Title" rules={[{ required: true, message: 'Please enter the lesson title' }]}>
-            <Input />
-          </Form.Item>
-
-          <Form.Item name="lesson_type" label="Lesson Type">
-            <Select options={lessonTypeOptions} />
-          </Form.Item>
-
-          {editLessonType === 'lesson' && (
-            <>
-              <Form.Item name="video_url" label="Video URL (optional if uploading file)">
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name="video_file"
-                label="Replace Video File"
-                valuePropName="fileList"
-                getValueFromEvent={(event) => (Array.isArray(event) ? event : event?.fileList)}
-              >
-                <Upload beforeUpload={() => false} maxCount={1}>
-                  <Button>Select Video File</Button>
-                </Upload>
-              </Form.Item>
-              <Form.Item
-                name="content_markdown"
-                label="Summary"
-                rules={[{ required: true, message: 'Please enter lesson summary' }]}
-              >
-                <Input.TextArea rows={10} />
-              </Form.Item>
-              <Form.Item name="min_watch_time" label="Minimum Watch Time (seconds)" rules={[{ required: true, message: 'Please enter minimum watch time' }]}>
-                <InputNumber min={0} style={{ width: '100%' }} />
-              </Form.Item>
-              <Card title="Preview" size="small">
-                <pre style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{editMarkdown || 'Nothing to preview yet.'}</pre>
-              </Card>
-            </>
-          )}
-
-          {editLessonType === 'quiz' && (
-            <>
-              <Form.List name="quiz_questions">
-                {(fields, { add, remove }) => (
-                  <Space direction="vertical" style={{ width: '100%' }} size={16}>
-                    {fields.map(({ key, name, ...restField }, questionIndex) => (
-                      <Card
-                        key={key}
-                        size="small"
-                        title={`Question ${questionIndex + 1}`}
-                        extra={fields.length > 1
-                          ? (
-                              <Button type="link" danger onClick={() => remove(name)}>
-                                Remove
-                              </Button>
-                            )
-                          : null}
-                      >
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'question']}
-                          label="Question"
-                          rules={[{ required: true, message: 'Please enter question text' }]}
-                        >
-                          <Input.TextArea rows={2} />
-                        </Form.Item>
-
-                        {[0, 1, 2, 3].map((optionIndex) => (
-                          <Form.Item
-                            key={`${key}-${optionIndex}`}
-                            {...restField}
-                            name={[name, 'options', optionIndex]}
-                            label={`Option ${optionIndex + 1}`}
-                            rules={[{ required: true, message: 'Please enter option text' }]}
-                          >
-                            <Input />
-                          </Form.Item>
-                        ))}
-
-                        <Form.Item
-                          {...restField}
-                          name={[name, 'correct_index']}
-                          label="Correct Answer"
-                          rules={[{ required: true, message: 'Please choose the correct answer' }]}
-                        >
-                          <Radio.Group
-                            options={[
-                              { label: 'Option 1', value: 0 },
-                              { label: 'Option 2', value: 1 },
-                              { label: 'Option 3', value: 2 },
-                              { label: 'Option 4', value: 3 },
-                            ]}
-                          />
-                        </Form.Item>
-                      </Card>
-                    ))}
-
-                    <Button
-                      type="dashed"
-                      onClick={() => add({ question: '', options: ['', '', '', ''], correct_index: 0 })}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Question
-                    </Button>
-                  </Space>
-                )}
-              </Form.List>
-
-              <Form.Item name="is_final" label="Final Module Quiz" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </>
-          )}
-
-          <Form.Item name="order_index" label="Order" rules={[{ required: true, message: 'Please enter lesson order' }]}>
-            <InputNumber min={0} style={{ width: '100%' }} />
-          </Form.Item>
-        </Form>
+        <Spin spinning={pipelineModalLoading}>
+          {pipelineDetail
+            ? (
+                <>
+                  <Descriptions bordered size="small" column={1} style={{ marginBottom: 16 }}>
+                    <Descriptions.Item label="Publication">{pipelineDetail.publication_status}</Descriptions.Item>
+                    <Descriptions.Item label="Learner active">{pipelineDetail.is_active ? 'yes' : 'no'}</Descriptions.Item>
+                    <Descriptions.Item label="Publication error">
+                      {pipelineDetail.publication_error || '—'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Transcript">{pipelineDetail.transcript_status}</Descriptions.Item>
+                    <Descriptions.Item label="Transcript error">
+                      {pipelineDetail.transcript_error || '—'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Supported for ingestion">
+                      {pipelineDetail.supported_for_ingestion ? 'yes' : 'no'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Active chunks">{pipelineDetail.active_chunk_count}</Descriptions.Item>
+                    <Descriptions.Item label="Has active chunk set">
+                      {pipelineDetail.has_active_chunk_set ? 'yes' : 'no'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Isolation ready">
+                      {pipelineDetail.active_chunk_set_isolation_ready ? 'yes' : 'no'}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Last indexed at">
+                      {pipelineDetail.last_indexed_at || '—'}
+                    </Descriptions.Item>
+                  </Descriptions>
+                  <Text strong>Raw payload</Text>
+                  <pre style={{ maxHeight: 280, overflow: 'auto', fontSize: 12, marginTop: 8 }}>
+                    {JSON.stringify(pipelineDetail, null, 2)}
+                  </pre>
+                </>
+              )
+            : (
+                !pipelineModalLoading && <Text type="secondary">No data</Text>
+              )}
+        </Spin>
       </Modal>
-    </div>
+
+    </AdminEntityDetailFrame>
   )
 }

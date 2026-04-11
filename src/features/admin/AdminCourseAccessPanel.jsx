@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Alert, Button, Card, Form, Input, Popconfirm, Space, Table, Tag, Typography, message } from 'antd'
+import { Alert, Button, Form, Input, Modal, Popconfirm, Space, Table, Tag, Tooltip, message } from 'antd'
+import { DeleteOutlined } from '@ant-design/icons'
 import {
   bulkGrantTeachersCourseAccessAPI,
-  getAdminCourseByIdAPI,
   getCourseEnrollmentsAPI,
   grantCourseAccessAPI,
   revokeCourseAccessAPI,
 } from './adminService'
+import { AdminListCreateLayout } from '../../components/admin/AdminListCreateLayout'
 import { applyFormApiError, parseApiError } from '../../utils/apiError'
-import styles from './AdminCourseAccessPage.module.css'
-
-const { Title, Text } = Typography
+import styles from './AdminCoursesPage.module.css'
 
 function sourceColor(source) {
   if (source === 'bulk_teacher_grant') return 'purple'
@@ -19,15 +17,13 @@ function sourceColor(source) {
   return 'green'
 }
 
-export function AdminCourseAccessPage() {
-  const { courseId } = useParams()
-  const navigate = useNavigate()
+export function AdminCourseAccessPanel({ courseId }) {
   const [loading, setLoading] = useState(false)
-  const [course, setCourse] = useState(null)
   const [enrollments, setEnrollments] = useState([])
   const [loadError, setLoadError] = useState(null)
   const [grantSubmitting, setGrantSubmitting] = useState(false)
   const [bulkSubmitting, setBulkSubmitting] = useState(false)
+  const [isGrantModalOpen, setIsGrantModalOpen] = useState(false)
   const [grantForm] = Form.useForm()
 
   async function loadData() {
@@ -35,14 +31,10 @@ export function AdminCourseAccessPage() {
     setLoading(true)
     setLoadError(null)
     try {
-      const [courseData, enrollmentList] = await Promise.all([
-        getAdminCourseByIdAPI(courseId),
-        getCourseEnrollmentsAPI(courseId),
-      ])
-      setCourse(courseData)
+      const enrollmentList = await getCourseEnrollmentsAPI(courseId)
       setEnrollments(Array.isArray(enrollmentList) ? enrollmentList : [])
     } catch (error) {
-      const parsed = parseApiError(error, 'Failed to load course access data')
+      const parsed = parseApiError(error, 'Failed to load enrollments')
       setLoadError(parsed.message)
     } finally {
       setLoading(false)
@@ -53,13 +45,23 @@ export function AdminCourseAccessPage() {
     loadData()
   }, [courseId])
 
+  function handleOpenGrantModal() {
+    grantForm.resetFields()
+    setIsGrantModalOpen(true)
+  }
+
+  function handleCloseGrantModal() {
+    setIsGrantModalOpen(false)
+    grantForm.resetFields()
+  }
+
   async function handleGrantAccess(values) {
     if (!courseId) return
     setGrantSubmitting(true)
     try {
       await grantCourseAccessAPI(courseId, values.user_id)
       message.success('Course access granted successfully')
-      grantForm.resetFields()
+      handleCloseGrantModal()
       loadData()
     } catch (error) {
       const parsed = parseApiError(error, 'Failed to grant course access')
@@ -98,41 +100,22 @@ export function AdminCourseAccessPage() {
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <Button onClick={() => navigate('/admin/courses')}>Back to Courses</Button>
-        <Title level={2} className={styles.title}>Course Access Management</Title>
-        <Text className={styles.subtitle}>
-          {course ? `${course.title}` : 'Loading course...'}
-        </Text>
-      </div>
-
+    <>
       {loadError && (
         <Alert type="error" showIcon message={loadError} style={{ marginBottom: 16 }} />
       )}
 
-      <Card title="Grant Access" className={styles.card}>
-        <Form form={grantForm} layout="inline" onFinish={handleGrantAccess}>
-          <Form.Item
-            name="user_id"
-            rules={[{ required: true, message: 'Please enter user id' }]}
-          >
-            <Input placeholder="User UUID" style={{ width: 320 }} />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={grantSubmitting}>
-              Grant Access
-            </Button>
-          </Form.Item>
-          <Form.Item>
-            <Button onClick={handleBulkGrantTeachers} loading={bulkSubmitting}>
-              Bulk Grant Teachers
-            </Button>
-          </Form.Item>
-        </Form>
-      </Card>
-
-      <Card title="Enrollments" className={styles.card}>
+      <AdminListCreateLayout
+        title="Enrollments"
+        cardClassName={styles.tableCard}
+        createLabel="Grant access"
+        onCreateClick={handleOpenGrantModal}
+        footerExtra={(
+          <Button size="large" onClick={handleBulkGrantTeachers} loading={bulkSubmitting}>
+            Bulk grant teachers
+          </Button>
+        )}
+      >
         <Table
           rowKey="id"
           loading={loading}
@@ -153,26 +136,49 @@ export function AdminCourseAccessPage() {
               key: 'source',
               render: (source) => <Tag color={sourceColor(source)}>{source}</Tag>,
             },
-            { title: 'Enrolled At', dataIndex: 'enrolled_at', key: 'enrolled_at' },
+            { title: 'Enrolled at', dataIndex: 'enrolled_at', key: 'enrolled_at' },
             {
-              title: 'Action',
+              title: 'Actions',
               key: 'action',
+              width: 72,
+              align: 'center',
               render: (_, record) => (
-                <Space>
+                <Tooltip title="Revoke access">
                   <Popconfirm
                     title="Revoke access for this enrollment?"
                     okText="Revoke"
                     cancelText="Cancel"
                     onConfirm={() => handleRevoke(record.id)}
                   >
-                    <Button danger>Revoke</Button>
+                    <Button type="text" danger icon={<DeleteOutlined />} aria-label="Revoke access" />
                   </Popconfirm>
-                </Space>
+                </Tooltip>
               ),
             },
           ]}
         />
-      </Card>
-    </div>
+      </AdminListCreateLayout>
+
+      <Modal
+        title="Grant access"
+        open={isGrantModalOpen}
+        onCancel={handleCloseGrantModal}
+        onOk={() => grantForm.submit()}
+        okText="Grant"
+        cancelText="Cancel"
+        confirmLoading={grantSubmitting}
+        destroyOnClose
+      >
+        <Form form={grantForm} layout="vertical" onFinish={handleGrantAccess} requiredMark={false}>
+          <Form.Item
+            name="user_id"
+            label="User ID"
+            rules={[{ required: true, message: 'Please enter user UUID' }]}
+          >
+            <Input placeholder="User UUID" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
   )
 }
